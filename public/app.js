@@ -1,6 +1,6 @@
 // Initialize Supabase (Replace with actual keys for production)
-const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://stcsccyjtvlamutmrnwl.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Xwv_YP0mi_jzlb0Ir5gGbA_q0SfZ0tv';
 
 // Check if the global 'supabase' object exists from the CDN
 const supabaseClient = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -69,16 +69,15 @@ const els = {
 };
 
 // --- Initialization ---
-function init() {
+async function init() {
     const params = new URLSearchParams(window.location.search);
     const room = params.get('room');
 
+    // 1. Receiver / Direct Link Mode
     if (room) {
-        // Receiver Mode
         state.roomId = room;
         state.isSender = false;
         
-        // Decode params
         const toName = params.get('to') || 'Valentine';
         const fromName = params.get('from') || 'Secret Admirer';
         const msgEnc = params.get('msg');
@@ -92,22 +91,66 @@ function init() {
             state.targetMessage = "Happy Valentine's Day!";
         }
 
-        // Show Receiver Panel
         els.creatorPanel.classList.add('hidden');
         els.receiverPanel.classList.remove('hidden');
-        
         els.recvValentineName.textContent = toName;
         els.recvSenderName.textContent = fromName;
 
+        // Check DB for Premium Status immediately
+        if (supabaseClient) {
+            const { data } = await supabaseClient.from('rooms').select('is_premium').eq('id', room).single();
+            if (data && data.is_premium) activatePremium();
+        }
+
+    // 2. Sender / Homepage Mode
     } else {
-        // Sender Mode (Default)
-        state.isSender = true;
-        els.creatorPanel.classList.remove('hidden');
+        // Check LocalStorage for existing session
+        const savedRoom = localStorage.getItem('bloom_room_id');
+        const savedName = localStorage.getItem('bloom_my_name');
+        
+        if (savedRoom && savedName) {
+            showRejoinPrompt(savedRoom, savedName);
+        } else {
+            state.isSender = true;
+            els.creatorPanel.classList.remove('hidden');
+        }
     }
 }
 
+function showRejoinPrompt(roomId, name) {
+    els.creatorPanel.innerHTML = `
+        <div class="text-center space-y-6">
+            <h2 class="text-2xl font-bold">Welcome back, ${name}!</h2>
+            <p class="text-gray-400">You have an active Valentine's Room.</p>
+            <div class="flex flex-col gap-3">
+                <button id="rejoinBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg">
+                    Rejoin Room
+                </button>
+                <button id="resetBtn" class="text-sm text-gray-500 underline">
+                    Create New Valentine
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('rejoinBtn').addEventListener('click', () => {
+        state.roomId = roomId;
+        state.myName = name;
+        state.isSender = true;
+        // Fetch partner name from DB or just enter (visuals might be generic without DB fetch, but realtime will sync)
+        enterGame();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        if(confirm("Abandon current room?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    });
+}
+
 // --- Logic: Creation Flow ---
-els.createBtn.addEventListener('click', () => {
+els.createBtn.addEventListener('click', async () => {
     console.log("Create Button Clicked");
     const valName = els.valentineNameInput.value.trim();
     const senderName = els.senderNameInput.value.trim();
@@ -117,13 +160,33 @@ els.createBtn.addEventListener('click', () => {
         return alert("Please fill in all fields to create your Valentine!");
     }
 
-    // Generate Room ID and Link
+    // Generate Room ID
     const roomId = Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
     const msgEnc = btoa(unescape(encodeURIComponent(msg)));
     
     // Safer baseUrl for local files
     const baseUrl = window.location.href.split('?')[0];
     const link = `${baseUrl}?room=${roomId}&to=${encodeURIComponent(valName)}&from=${encodeURIComponent(senderName)}&msg=${msgEnc}`;
+
+    // 1. SAVE TO DB (Crucial for Payments)
+    if (supabaseClient) {
+        const { error } = await supabaseClient.from('rooms').insert({
+            id: roomId,
+            partner_1_name: senderName,
+            partner_2_name: valName,
+            message: msg,
+            is_premium: false
+        });
+
+        if (error) {
+            console.error("DB Error:", error);
+            alert("Warning: Could not save to database. Payments may not work. (Check Console)");
+        }
+    }
+
+    // 2. SAVE TO LOCAL STORAGE (Remember Me)
+    localStorage.setItem('bloom_room_id', roomId);
+    localStorage.setItem('bloom_my_name', senderName);
 
     // Update State
     state.roomId = roomId;
