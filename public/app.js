@@ -339,8 +339,13 @@ els.tapBtn.addEventListener('click', () => {
 function handleRemoteTap(payload) {
     // Sync Logic
     if (state.charge < 100) {
-        state.charge += 2;
-        if (state.charge > 100) state.charge = 100;
+        state.charge += 2; // Increment
+        if (state.charge >= 100) {
+            state.charge = 100;
+            updateBatteryUI();
+            revealMessage(); // Trigger immediately
+            return;
+        }
         updateBatteryUI();
         
         // Visuals
@@ -364,29 +369,47 @@ function handleRemoteTap(payload) {
              els.tapBtn.classList.add('scale-95');
              setTimeout(() => els.tapBtn.classList.remove('scale-95'), 100);
         }
-
-        if (state.charge === 100) revealMessage();
     }
-}
-
-function updateBatteryUI() {
-    els.batteryLevel.style.height = `${state.charge}%`;
-    els.chargeText.textContent = `${state.charge}%`;
 }
 
 function revealMessage() {
+    // Prevent double execution
+    if (els.batteryContainer.classList.contains('hidden')) return;
+
+    // 1. Celebration!
+    confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: state.isPremium ? ['#FFD700', '#FFA500'] : ['#FF1493', '#FF69B4']
+    });
+
+    // 2. Hide Game UI
     els.batteryContainer.classList.add('hidden');
     els.tapBtn.classList.add('hidden');
+    document.querySelector('#gameArea p.animate-pulse').classList.add('hidden'); // Hide instruction text
+
+    // 3. Show Message with Animation
     els.messageReveal.classList.remove('hidden');
+    els.messageReveal.classList.add('animate-fade-in', 'scale-100', 'opacity-100');
     
     // Display the message based on who is viewing
     if (state.isSender) {
-        els.finalMessage.textContent = `Your message "${state.targetMessage.replace('Your message will be revealed to ' + state.partnerName, '...')}" has been revealed to ${state.partnerName}!`;
+        els.finalMessage.innerHTML = `
+            <span class="block text-sm text-gray-400 mb-2">You sent:</span>
+            <span class="text-2xl font-serif text-brand-pink">"${state.targetMessage.replace('Your message will be revealed to ' + state.partnerName, '...')}"</span>
+            <span class="block text-sm text-green-400 mt-4 animate-bounce">✨ Revealed to ${state.partnerName}! ✨</span>
+        `;
     } else {
-        els.finalMessage.textContent = `"${state.targetMessage}"`;
+        els.finalMessage.innerHTML = `
+            <span class="text-3xl font-serif text-brand-pink leading-relaxed">"${state.targetMessage}"</span>
+        `;
     }
     
-    if (state.isPremium) els.downloadCertBtn.classList.remove('hidden');
+    if (state.isPremium) {
+        els.downloadCertBtn.classList.remove('hidden');
+        els.downloadCertBtn.classList.add('animate-bounce');
+    }
 }
 
 // Premium & Cert
