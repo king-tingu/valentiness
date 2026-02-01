@@ -337,15 +337,33 @@ els.tapBtn.addEventListener('click', () => {
 });
 
 function handleRemoteTap(payload) {
+    // Sync Logic
     if (state.charge < 100) {
         state.charge += 2;
         if (state.charge > 100) state.charge = 100;
         updateBatteryUI();
-        emitParticles(state.isPremium ? 10 : 5);
-        els.tapBtn.classList.add('scale-95');
-        setTimeout(() => els.tapBtn.classList.remove('scale-95'), 100);
-        els.chargingIcon.classList.remove('hidden');
-        setTimeout(() => els.chargingIcon.classList.add('hidden'), 500);
+        
+        // Visuals
+        const isSelf = payload.sender === state.myName;
+        const particleCount = state.isPremium ? 10 : 5;
+        emitParticles(particleCount);
+
+        // If it's the PARTNER tapping, give extra feedback to me
+        if (!isSelf) {
+            if (navigator.vibrate) navigator.vibrate(50); // Haptic
+            
+            // Visual Pulse on the button to show "They tapped!"
+            els.tapBtn.classList.add('scale-95', 'border-white'); 
+            setTimeout(() => els.tapBtn.classList.remove('scale-95', 'border-white'), 100);
+            
+            // Show charging icon
+            els.chargingIcon.classList.remove('hidden');
+            setTimeout(() => els.chargingIcon.classList.add('hidden'), 500);
+        } else {
+            // Self tap feedback (subtler)
+             els.tapBtn.classList.add('scale-95');
+             setTimeout(() => els.tapBtn.classList.remove('scale-95'), 100);
+        }
 
         if (state.charge === 100) revealMessage();
     }
@@ -372,14 +390,38 @@ function revealMessage() {
 }
 
 // Premium & Cert
-els.premiumBtn.addEventListener('click', () => {
-    if (confirm("Simulate Payment of KES 100 via Pesapal?")) {
-        if (state.channel) {
-            state.channel.send({ type: 'broadcast', event: 'premium_unlock', payload: {} });
+els.premiumBtn.addEventListener('click', async () => {
+    // 1. Real Pesapal Integration
+    if (!confirm("Upgrade to Premium for KES 10.00? This unlocks the Gold Theme and Love Certificate.")) return;
+
+    els.premiumBtn.textContent = "Processing...";
+    els.premiumBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                roomId: state.roomId,
+                name: state.myName,
+                email: "user@example.com" // In a real app, you might ask for this
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.redirect_url) {
+            // Redirect user to Pesapal payment page
+            window.location.href = data.redirect_url;
         } else {
-            // Local fallback if no realtime
-            activatePremium();
+            throw new Error(data.error || "Payment initialization failed");
         }
+
+    } catch (err) {
+        console.error(err);
+        alert("Payment Error: " + err.message);
+        els.premiumBtn.textContent = "Unlock Premium (Gold Theme)";
+        els.premiumBtn.disabled = false;
     }
 });
 
