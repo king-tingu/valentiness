@@ -19,7 +19,9 @@ const state = {
     isPremium: false,
     channel: null,
     isSender: false, // Track if I am the creator
-    myConsecutiveTaps: 0 // Track turn-taking
+    myConsecutiveTaps: 0, // Track turn-taking
+    scores: { me: 0, partner: 0 },
+    isGoldenMoment: false
 };
 
 // --- DOM Elements ---
@@ -30,6 +32,7 @@ const els = {
     // Panels
     creatorPanel: document.getElementById('creatorPanel'),
     sharePanel: document.getElementById('sharePanel'),
+    // ... (Keep existing mappings implied, adding new ones)
     receiverPanel: document.getElementById('receiverPanel'),
     gameArea: document.getElementById('gameArea'),
 
@@ -60,7 +63,13 @@ const els = {
     messageReveal: document.getElementById('messageReveal'),
     finalMessage: document.getElementById('finalMessage'),
     statusIndicator: document.getElementById('statusIndicator'),
-    soloWarning: document.getElementById('soloWarning'), // New warning toast
+    soloWarning: document.getElementById('soloWarning'),
+    
+    // Scoreboard
+    scoreValue1: document.getElementById('scoreValue1'),
+    scoreValue2: document.getElementById('scoreValue2'),
+    scoreName1: document.getElementById('scoreName1'),
+    scoreName2: document.getElementById('scoreName2'),
     
     // Premium / Cert
     premiumBtn: document.getElementById('premiumBtn'),
@@ -249,9 +258,8 @@ function setupRealtime() {
             }
         })
         .on('broadcast', { event: 'premium_unlock' }, () => activatePremium())
-        // LISTEN FOR DB CHANGES (Manual updates or Webhook updates)
-        .on(
-            'postgres_changes', 
+        .on('broadcast', { event: 'spawn_gold' }, () => showGoldenButton()) // Golden Heart Event
+        .on('postgres_changes', 
             { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${state.roomId}` }, 
             (payload) => {
                 if (payload.new && payload.new.is_premium) {
@@ -268,8 +276,37 @@ function setupRealtime() {
                 
                 // Ask for current state from anyone already there
                 state.channel.send({ type: 'broadcast', event: 'sync_request', payload: {} });
+
+                // Host starts the Game Loop (Golden Heart Spawner)
+                if (state.isSender) {
+                    setInterval(() => {
+                        if (state.charge < 100 && Math.random() > 0.7) { // 30% chance every 5s check
+                            state.channel.send({ type: 'broadcast', event: 'spawn_gold', payload: {} });
+                            showGoldenButton();
+                        }
+                    }, 5000);
+                }
             }
         });
+}
+
+function showGoldenButton() {
+    state.isGoldenMoment = true;
+    els.tapBtn.classList.add('bg-brand-gold', 'animate-pulse', 'border-yellow-200');
+    els.tapBtn.innerHTML = `<i data-lucide="star" class="w-16 h-16 text-black fill-current animate-spin"></i>`;
+    lucide.createIcons();
+
+    // Reset after 3 seconds if missed
+    setTimeout(() => {
+        if (state.isGoldenMoment) resetGoldenButton();
+    }, 3000);
+}
+
+function resetGoldenButton() {
+    state.isGoldenMoment = false;
+    els.tapBtn.classList.remove('bg-brand-gold', 'animate-pulse', 'border-yellow-200');
+    els.tapBtn.innerHTML = `<i data-lucide="fingerprint" class="w-16 h-16 text-brand-pink"></i>`;
+    lucide.createIcons();
 }
 
 function updatePresence() {
@@ -364,9 +401,24 @@ els.tapBtn.addEventListener('click', () => {
         return;
     }
 
-    // 2. Broadcast Tap with explicit Charge value for sync
-    // Optimistically assume we will succeed to +1 locally, so send that future value
-    const nextCharge = Math.min(state.charge + 1, 100);
+    let points = 1;
+    let chargeAdd = 1;
+    let isCrit = false;
+
+    // 2. Critical Hit Check (Golden Heart)
+    if (state.isGoldenMoment) {
+        isCrit = true;
+        points = 50;
+        chargeAdd = 5;
+        resetGoldenButton();
+        confetti({ particleCount: 50, spread: 40, colors: ['#FFD700'] }); // Mini gold explosion
+    }
+
+    state.scores.me += points;
+    updateScoreboard();
+
+    // 3. Broadcast Tap
+    const nextCharge = Math.min(state.charge + chargeAdd, 100);
 
     if (state.channel) {
         state.channel.send({ 
@@ -374,13 +426,15 @@ els.tapBtn.addEventListener('click', () => {
             event: 'tap', 
             payload: { 
                 sender: state.myName,
-                charge: nextCharge // Authoritative sync value
+                charge: nextCharge,
+                score: state.scores.me, // Send my new score
+                isCrit: isCrit
             } 
         });
     }
 
     state.myConsecutiveTaps++;
-    if (navigator.vibrate) navigator.vibrate(50);
+    if (navigator.vibrate) navigator.vibrate(isCrit ? 200 : 50);
 });
 
 function handleRemoteTap(payload) {
@@ -390,14 +444,26 @@ function handleRemoteTap(payload) {
     if (!isSelf) {
         state.myConsecutiveTaps = 0;
         els.soloWarning.classList.add('hidden');
+        
+        // Update Partner Score
+        if (payload.score) {
+            state.scores.partner = payload.score;
+            updateScoreboard();
+        }
+
+        // Did they steal the Gold?
+        if (payload.isCrit) {
+            resetGoldenButton(); // I missed it!
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-yellow-500 text-black font-bold px-4 py-2 rounded-full shadow-lg z-50 animate-bounce';
+            toast.textContent = `${payload.sender} stole the Golden Heart!`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
     }
 
     // Sync Logic: Adopt the higher charge to fix desyncs (83 vs 87)
-    // If payload.charge is present, use it. Otherwise fallback to local + 1.
     const remoteCharge = payload.charge || (state.charge + 1);
-    
-    // We update local state if the remote is ahead, OR if it's a standard increment
-    // Logic: Always take the max of (local, remote) to ensure we never go backward
     const newCharge = Math.max(state.charge, remoteCharge);
 
     if (state.charge < 100) {
@@ -413,7 +479,7 @@ function handleRemoteTap(payload) {
         updateBatteryUI();
         
         // Visuals
-        const particleCount = state.isPremium ? 10 : 5;
+        const particleCount = (state.isPremium || payload.isCrit) ? 10 : 5;
         emitParticles(particleCount);
 
         // If it's the PARTNER tapping, give extra feedback to me
@@ -432,6 +498,19 @@ function handleRemoteTap(payload) {
              els.tapBtn.classList.add('scale-95');
              setTimeout(() => els.tapBtn.classList.remove('scale-95'), 100);
         }
+    }
+}
+
+function updateScoreboard() {
+    els.scoreValue1.textContent = state.scores.me;
+    els.scoreValue2.textContent = state.scores.partner;
+    // Highlight leader
+    if (state.scores.me > state.scores.partner) {
+        els.scoreValue1.classList.add('text-brand-gold');
+        els.scoreValue2.classList.remove('text-brand-gold');
+    } else if (state.scores.partner > state.scores.me) {
+        els.scoreValue2.classList.add('text-brand-gold');
+        els.scoreValue1.classList.remove('text-brand-gold');
     }
 }
 
