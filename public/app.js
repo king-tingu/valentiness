@@ -183,43 +183,63 @@ els.songSearchBtn.addEventListener('click', async () => {
 
     els.songSearchBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>';
     
-    try {
-        // Use a public Invidious instance for search (No API Key needed)
-        // Fallback instances: invidious.jing.rocks, invidious.io
-        const response = await fetch(`https://invidious.jing.rocks/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-        const data = await response.json();
-        
-        // Take top 3 results
-        const results = data.slice(0, 3);
-        
-        els.searchResults.innerHTML = '';
-        els.searchResults.classList.remove('hidden');
+    // List of Piped instances (More reliable than Invidious)
+    const instances = [
+        'https://pipedapi.kavin.rocks',
+        'https://api.piped.io',
+        'https://piped-api.garudalinux.org'
+    ];
 
-        if (results.length === 0) {
-            els.searchResults.innerHTML = '<p class="text-xs text-gray-500 text-center">No results found.</p>';
+    let results = [];
+    let success = false;
+
+    for (const base of instances) {
+        try {
+            console.log(`Trying search on: ${base}`);
+            const response = await fetch(`${base}/search?q=${encodeURIComponent(query)}&filter=videos`);
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const data = await response.json();
+            results = data.items.slice(0, 3); // Top 3
+            success = true;
+            break; // Stop if successful
+        } catch (e) {
+            console.warn(`Failed on ${base}:`, e);
         }
+    }
+    
+    // Render Results
+    els.searchResults.innerHTML = '';
+    els.searchResults.classList.remove('hidden');
 
+    if (!success || results.length === 0) {
+        els.searchResults.innerHTML = '<p class="text-xs text-gray-500 text-center">Search failed. Please paste the YouTube URL directly below if search continues to fail.</p>';
+        // Optional: Reveal a manual input as fallback?
+        // For now, just show error.
+        alert("Could not find songs. Please try a more specific name.");
+    } else {
         results.forEach(video => {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-3 p-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors';
+            
+            // Extract ID from Piped URL "/watch?v=ID"
+            const videoId = video.url.split('v=')[1]; 
+
             div.innerHTML = `
-                <img src="${video.videoThumbnails[1]?.url || video.videoThumbnails[0]?.url}" class="w-12 h-9 object-cover rounded-md">
+                <img src="${video.thumbnail}" class="w-12 h-9 object-cover rounded-md">
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-white truncate">${video.title}</p>
-                    <p class="text-[10px] text-gray-400 truncate">${video.author}</p>
+                    <p class="text-[10px] text-gray-400 truncate">${video.uploaderName}</p>
                 </div>
             `;
-            div.addEventListener('click', () => selectSong(video));
+            // Standardize object for selectSong
+            div.addEventListener('click', () => selectSong({ videoId, title: video.title }));
             els.searchResults.appendChild(div);
         });
-
-    } catch (err) {
-        console.error(err);
-        alert("Search failed. Please try a different song name.");
-    } finally {
-        els.songSearchBtn.innerHTML = '<i data-lucide="search" class="w-5 h-5"></i>';
-        lucide.createIcons();
     }
+
+    els.songSearchBtn.innerHTML = '<i data-lucide="search" class="w-5 h-5"></i>';
+    lucide.createIcons();
 });
 
 function selectSong(video) {
