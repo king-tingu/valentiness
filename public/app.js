@@ -13,6 +13,7 @@ if (!supabaseClient) {
 const state = {
     roomId: null,
     myName: null,
+    mySessionId: Math.random().toString(36).substring(7), // Unique ID for this tab/device
     partnerName: null, // The other person's name (for display)
     targetMessage: null, // The message to reveal
     charge: 0,
@@ -441,6 +442,7 @@ els.tapBtn.addEventListener('click', () => {
             event: 'tap', 
             payload: { 
                 sender: state.myName,
+                sessionId: state.mySessionId, // Unique ID
                 charge: nextCharge,
                 score: state.scores.me, // Send my new score
                 isCrit: isCrit
@@ -453,7 +455,8 @@ els.tapBtn.addEventListener('click', () => {
 });
 
 function handleRemoteTap(payload) {
-    const isSelf = payload.sender === state.myName;
+    // Use Session ID for reliable "Self" detection
+    const isSelf = payload.sessionId === state.mySessionId;
 
     // Reset restriction if partner tapped
     if (!isSelf) {
