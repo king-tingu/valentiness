@@ -45,6 +45,13 @@ const els = {
     // Share Inputs
     shareLinkInput: document.getElementById('shareLinkInput'),
     
+    // Music
+    youtubeInput: document.getElementById('youtubeInput'),
+    musicControls: document.getElementById('musicControls'),
+    ytPlayer: document.getElementById('ytPlayer'),
+    musicToggleBtn: document.getElementById('musicToggleBtn'),
+    ytPlayerContainer: document.getElementById('ytPlayerContainer'),
+
     // Receiver Display
     recvValentineName: document.getElementById('recvValentineName'),
     recvSenderName: document.getElementById('recvSenderName'),
@@ -94,6 +101,7 @@ async function init() {
         const toName = params.get('to') || 'Valentine';
         const fromName = params.get('from') || 'Secret Admirer';
         const msgEnc = params.get('msg');
+        const ytId = params.get('yt'); // Get Song ID
         
         state.myName = toName;
         state.partnerName = fromName;
@@ -108,6 +116,9 @@ async function init() {
         els.receiverPanel.classList.remove('hidden');
         els.recvValentineName.textContent = toName;
         els.recvSenderName.textContent = fromName;
+        
+        // Setup Music if present
+        if (ytId) setupMusic(ytId);
 
         // Check DB for Premium Status immediately
         if (supabaseClient) {
@@ -117,6 +128,7 @@ async function init() {
 
     // 2. Sender / Homepage Mode
     } else {
+        // ... (Keep existing rejoin logic)
         // Check LocalStorage for existing session
         const savedRoom = localStorage.getItem('bloom_room_id');
         const savedName = localStorage.getItem('bloom_my_name');
@@ -130,36 +142,30 @@ async function init() {
     }
 }
 
-function showRejoinPrompt(roomId, name) {
-    els.creatorPanel.innerHTML = `
-        <div class="text-center space-y-6">
-            <h2 class="text-2xl font-bold">Welcome back, ${name}!</h2>
-            <p class="text-gray-400">You have an active Valentine's Room.</p>
-            <div class="flex flex-col gap-3">
-                <button id="rejoinBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg">
-                    Rejoin Room
-                </button>
-                <button id="resetBtn" class="text-sm text-gray-500 underline">
-                    Create New Valentine
-                </button>
-            </div>
-        </div>
-    `;
+function setupMusic(videoId) {
+    els.musicControls.classList.remove('hidden');
+    els.musicControls.classList.add('flex');
     
-    document.getElementById('rejoinBtn').addEventListener('click', () => {
-        state.roomId = roomId;
-        state.myName = name;
-        state.isSender = true;
-        // Fetch partner name from DB or just enter (visuals might be generic without DB fetch, but realtime will sync)
-        enterGame();
-    });
-
-    document.getElementById('resetBtn').addEventListener('click', () => {
-        if(confirm("Abandon current room?")) {
-            localStorage.clear();
-            location.reload();
+    // Toggle Player Visibility
+    let isPlayerVisible = false;
+    els.musicToggleBtn.addEventListener('click', () => {
+        isPlayerVisible = !isPlayerVisible;
+        if (isPlayerVisible) {
+            els.ytPlayerContainer.classList.remove('hidden');
+            // Auto-play when opened first time
+            if (!els.ytPlayer.src) {
+                els.ytPlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1`;
+            }
+        } else {
+            els.ytPlayerContainer.classList.add('hidden');
         }
     });
+}
+
+function getYoutubeId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
 }
 
 // --- Logic: Creation Flow ---
@@ -168,6 +174,7 @@ els.createBtn.addEventListener('click', async () => {
     const valName = els.valentineNameInput.value.trim();
     const senderName = els.senderNameInput.value.trim();
     const msg = els.secretMessageInput.value.trim();
+    const ytUrl = els.youtubeInput.value.trim();
 
     if (!valName || !senderName || !msg) {
         return alert("Please fill in all fields to create your Valentine!");
@@ -176,10 +183,17 @@ els.createBtn.addEventListener('click', async () => {
     // Generate Room ID
     const roomId = Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
     const msgEnc = btoa(unescape(encodeURIComponent(msg)));
+    let ytParam = '';
+    let ytId = null;
+
+    if (ytUrl) {
+        ytId = getYoutubeId(ytUrl);
+        if (ytId) ytParam = `&yt=${ytId}`;
+    }
     
     // Safer baseUrl for local files
     const baseUrl = window.location.href.split('?')[0];
-    const link = `${baseUrl}?room=${roomId}&to=${encodeURIComponent(valName)}&from=${encodeURIComponent(senderName)}&msg=${msgEnc}`;
+    const link = `${baseUrl}?room=${roomId}&to=${encodeURIComponent(valName)}&from=${encodeURIComponent(senderName)}&msg=${msgEnc}${ytParam}`;
 
     // 1. SAVE TO DB (Crucial for Payments)
     if (supabaseClient) {
@@ -188,6 +202,7 @@ els.createBtn.addEventListener('click', async () => {
             partner_1_name: senderName,
             partner_2_name: valName,
             message: msg,
+            // youtube_id: ytId, // Optional: Add this column to DB if you want strict persistence
             is_premium: false
         });
 
@@ -464,7 +479,7 @@ function handleRemoteTap(payload) {
         els.soloWarning.classList.add('hidden');
         
         // Update Partner Score
-        if (payload.score) {
+        if (payload.score !== undefined) {
             state.scores.partner = payload.score;
             updateScoreboard();
         }

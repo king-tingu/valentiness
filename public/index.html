@@ -87,6 +87,12 @@
                         class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg resize-none"></textarea>
                 </div>
 
+                <div class="space-y-3">
+                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">Our Song (YouTube Link - Optional)</label>
+                    <input type="text" id="youtubeInput" placeholder="Paste YouTube URL here..." 
+                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-sm">
+                </div>
+
                 <button id="createBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95 mt-4">
                     Create Link
                 </button>
@@ -240,6 +246,18 @@
                 <p class="text-sm font-bold text-[#FFD700]">OFFICIAL GOLD SEAL</p>
             </div>
         </div>
+    </div>
+
+    <!-- Music Player (Floating) -->
+    <div id="musicControls" class="hidden fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+        <!-- Hidden Iframe -->
+        <div id="ytPlayerContainer" class="hidden w-64 h-36 rounded-xl overflow-hidden shadow-2xl border-2 border-brand-pink bg-black">
+            <iframe id="ytPlayer" width="100%" height="100%" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <!-- Toggle Button -->
+        <button id="musicToggleBtn" class="w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-brand-pink shadow-lg hover:bg-white/20 transition-all animate-bounce-slow">
+            <i data-lucide="music" class="w-6 h-6"></i>
+        </button>
     </div>
 
     <script src="app.js"></script>
