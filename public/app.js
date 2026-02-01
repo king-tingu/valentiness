@@ -53,6 +53,8 @@ const els = {
     selectedSongPreview: document.getElementById('selectedSongPreview'),
     selectedSongTitle: document.getElementById('selectedSongTitle'),
     clearSongBtn: document.getElementById('clearSongBtn'),
+    manualEntryToggle: document.getElementById('manualEntryToggle'),
+    manualYoutubeInput: document.getElementById('manualYoutubeInput'),
     
     // Music Player
     musicControls: document.getElementById('musicControls'),
@@ -213,10 +215,10 @@ els.songSearchBtn.addEventListener('click', async () => {
     els.searchResults.classList.remove('hidden');
 
     if (!success || results.length === 0) {
-        els.searchResults.innerHTML = '<p class="text-xs text-gray-500 text-center">Search failed. Please paste the YouTube URL directly below if search continues to fail.</p>';
-        // Optional: Reveal a manual input as fallback?
-        // For now, just show error.
-        alert("Could not find songs. Please try a more specific name.");
+        els.searchResults.innerHTML = '<p class="text-xs text-gray-500 text-center">Search failed. Please paste the YouTube URL directly below.</p>';
+        // Auto-show manual input
+        els.manualYoutubeInput.classList.remove('hidden');
+        els.manualYoutubeInput.focus();
     } else {
         results.forEach(video => {
             const div = document.createElement('div');
@@ -259,6 +261,14 @@ els.clearSongBtn.addEventListener('click', () => {
     els.selectedSongPreview.classList.remove('flex');
 });
 
+// Manual Entry Toggle
+els.manualEntryToggle.addEventListener('click', () => {
+    els.manualYoutubeInput.classList.toggle('hidden');
+    if (!els.manualYoutubeInput.classList.contains('hidden')) {
+        els.manualYoutubeInput.focus();
+    }
+});
+
 
 // --- Logic: Creation Flow ---
 els.createBtn.addEventListener('click', async () => {
@@ -266,8 +276,14 @@ els.createBtn.addEventListener('click', async () => {
     const valName = els.valentineNameInput.value.trim();
     const senderName = els.senderNameInput.value.trim();
     const msg = els.secretMessageInput.value.trim();
-    // const ytUrl = els.youtubeInput.value.trim(); // Removed
-    const ytId = els.selectedVideoId.value;
+    
+    // Check Search ID OR Manual Link
+    let ytId = els.selectedVideoId.value;
+    const manualLink = els.manualYoutubeInput.value.trim();
+    
+    if (!ytId && manualLink) {
+        ytId = getYoutubeId(manualLink);
+    }
 
     if (!valName || !senderName || !msg) {
         return alert("Please fill in all fields to create your Valentine!");

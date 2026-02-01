@@ -108,6 +108,16 @@
                         <button id="clearSongBtn" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
                     </div>
 
+                    <!-- Manual Fallback -->
+                    <div class="mt-2 text-right">
+                        <button id="manualEntryToggle" class="text-[10px] text-gray-400 underline hover:text-white">
+                            Can't find it? Paste link instead
+                        </button>
+                    </div>
+                    
+                    <input type="text" id="manualYoutubeInput" placeholder="Paste YouTube Link (e.g. https://youtu.be/...)" 
+                        class="hidden w-full p-4 mt-2 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-sm">
+
                     <input type="hidden" id="selectedVideoId">
                 </div>
 
