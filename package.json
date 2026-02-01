@@ -1,0 +1,8 @@
+{
+  "name": "bloom-together",
+  "version": "1.0.0",
+  "description": "Valentine's Real-time Interaction App",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloomTogether - Connect Hearts</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-pink': '#FF1493',
+                        'brand-gold': '#FFD700',
+                        'brand-dark': '#121212',
+                        'brand-gray': '#1E1E1E'
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: white; overflow-x: hidden; touch-action: manipulation; }
+        canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 50; }
+        .gold-theme .text-brand-pink { color: #FFD700 !important; }
+        .gold-theme .bg-brand-pink { background-color: #FFD700 !important; }
+        .gold-theme .border-brand-pink { border-color: #FFD700 !important; }
+        .gold-glow { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        .certificate-container { 
+            width: 800px; 
+            height: 600px; 
+            display: none; /* Hidden by default, shown for PDF generation */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center font-sans">
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- App Container -->
+    <div id="app" class="w-full max-w-md px-6 py-8 flex flex-col items-center relative z-10">
+        
+        <!-- Header -->
+        <header class="w-full flex justify-between items-center mb-8">
+            <div class="flex items-center gap-2">
+                <i data-lucide="heart" class="text-brand-pink w-6 h-6 fill-current"></i>
+                <h1 class="text-xl font-bold tracking-wider">BloomTogether</h1>
+            </div>
+            <div id="statusIndicator" class="w-3 h-3 rounded-full bg-red-500 transition-colors"></div>
+        </header>
+
+        <!-- Room Setup / Landing Flow -->
+        <div id="setupFlow" class="w-full relative">
+            
+            <!-- 1. Creator Form (Initial View for Sender) -->
+            <div id="creatorPanel" class="w-full space-y-4 animate-fade-in">
+                <h2 class="text-2xl font-bold text-center mb-6">Create a Valentine</h2>
+                <p class="text-gray-400 text-center text-sm mb-4">Send a special interactive heart to your valentine.</p>
+                
+                <div class="space-y-3">
+                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">To (Valentine)</label>
+                    <input type="text" id="valentineNameInput" placeholder="e.g. Juliet" 
+                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">From (You)</label>
+                    <input type="text" id="senderNameInput" placeholder="e.g. Romeo" 
+                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">Secret Message</label>
+                    <textarea id="secretMessageInput" placeholder="Will be revealed at 100% charge..." rows="3"
+                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg resize-none"></textarea>
+                </div>
+
+                <button id="createBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95 mt-4">
+                    Create Link
+                </button>
+            </div>
+
+            <!-- 2. Share Link Panel (Hidden) -->
+            <div id="sharePanel" class="hidden w-full space-y-6 text-center animate-fade-in">
+                <div class="bg-gray-800 p-6 rounded-2xl border border-dashed border-gray-600">
+                    <i data-lucide="link" class="w-12 h-12 text-brand-pink mx-auto mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Link Ready!</h3>
+                    <p class="text-sm text-gray-400 mb-4">Share this with your Valentine first, then join the room.</p>
+                    
+                    <div class="flex items-center gap-2 bg-black p-2 rounded-lg mb-4">
+                        <input type="text" id="shareLinkInput" readonly class="w-full bg-transparent text-sm text-gray-300 outline-none p-1">
+                        <button id="copyBtn" class="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
+                            <i data-lucide="copy" class="w-4 h-4 text-white"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="joinAsSenderBtn" class="w-full border-2 border-brand-pink text-brand-pink font-bold p-4 rounded-xl hover:bg-brand-pink hover:text-white transition-colors">
+                    Enter Room & Wait
+                </button>
+            </div>
+
+            <!-- 3. Receiver Landing (Hidden) -->
+            <div id="receiverPanel" class="hidden w-full text-center space-y-6 animate-fade-in">
+                <div class="mb-8 relative">
+                    <div class="absolute inset-0 bg-brand-pink blur-3xl opacity-20 rounded-full"></div>
+                    <i data-lucide="heart-handshake" class="w-24 h-24 text-brand-pink mx-auto relative z-10 animate-bounce"></i>
+                </div>
+                
+                <div>
+                    <h2 class="text-3xl font-bold mb-2">Happy Valentine's, <span id="recvValentineName" class="text-brand-pink"></span>!</h2>
+                    <p class="text-xl text-gray-300">From <span id="recvSenderName" class="font-bold text-white"></span></p>
+                </div>
+
+                <div class="bg-gray-800/50 p-4 rounded-xl text-sm text-gray-400">
+                    <p>Tap the heart together to charge up the battery and reveal your secret message!</p>
+                </div>
+
+                <button id="receiverJoinBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95 text-lg">
+                    Open Your Gift
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Main Interaction Area (Hidden until joined) -->
+        <div id="gameArea" class="hidden w-full flex-col items-center">
+            
+            <!-- Battery / Charge Container -->
+            <div id="batteryContainer" class="w-32 h-64 border-4 border-brand-pink rounded-3xl p-2 relative mb-8 flex flex-col justify-end items-center">
+                <!-- Battery Level -->
+                <div id="batteryLevel" class="w-full bg-brand-pink rounded-xl transition-all duration-300 ease-out" style="height: 0%;"></div>
+                <!-- Charge Text -->
+                <span id="chargeText" class="absolute inset-0 flex items-center justify-center font-bold text-xl drop-shadow-md">0%</span>
+                <!-- Charging Bolt -->
+                <i data-lucide="zap" class="absolute -top-10 text-brand-pink w-8 h-8 animate-pulse-fast hidden" id="chargingIcon"></i>
+            </div>
+
+            <!-- Tap Button -->
+            <button id="tapBtn" class="w-32 h-32 rounded-full bg-brand-gray border-4 border-brand-pink flex items-center justify-center shadow-[0_0_30px_rgba(255,20,147,0.3)] hover:scale-105 active:scale-90 transition-all cursor-pointer select-none">
+                <i data-lucide="fingerprint" class="w-16 h-16 text-brand-pink"></i>
+            </button>
+            <p class="mt-4 text-gray-400 text-sm animate-pulse">Tap repeatedly to charge love!</p>
+
+            <!-- Revealed Message (Hidden until 100%) -->
+            <div id="messageReveal" class="hidden w-full p-6 bg-brand-gray rounded-2xl border border-brand-pink mt-8 text-center animate-fade-in">
+                <h3 class="text-brand-pink font-bold text-lg mb-2">Message from Partner</h3>
+                <p id="finalMessage" class="text-xl italic">"Loading..."</p>
+                
+                <!-- Certificate Download (Premium Only) -->
+                <button id="downloadCertBtn" class="hidden mt-6 w-full bg-brand-gold text-brand-dark font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                    <i data-lucide="download"></i> Download Love Certificate
+                </button>
+            </div>
+
+            <!-- Premium Upgrade Section -->
+            <div id="premiumSection" class="mt-12 w-full pt-8 border-t border-gray-800">
+                <div id="adBanner" class="bg-gray-800 p-4 rounded-lg mb-4 text-center text-xs text-gray-400">
+                    [Ad] Create your own free room today!
+                </div>
+                
+                <button id="premiumBtn" class="w-full border border-brand-gold text-brand-gold p-3 rounded-xl hover:bg-brand-gold hover:text-black transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="crown"></i> Unlock Premium (Gold Theme)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Certificate Template for PDF Generation -->
+    <div id="certificateTemplate" class="bg-white text-black p-10 border-[20px] border-double border-[#FFD700] flex flex-col items-center justify-center text-center relative hidden">
+        <h1 class="text-5xl font-serif mb-4 text-[#FF1493]" style="font-family: 'Times New Roman', serif;">Certificate of Love</h1>
+        <p class="text-xl mb-8">This certifies that the bond between</p>
+        
+        <div class="flex items-center gap-4 mb-8">
+            <span id="certName1" class="text-3xl font-bold border-b-2 border-black pb-1">Partner 1</span>
+            <span class="text-2xl">&</span>
+            <span id="certName2" class="text-3xl font-bold border-b-2 border-black pb-1">Partner 2</span>
+        </div>
+
+        <p class="text-xl mb-12">Has reached 100% Charge on BloomTogether</p>
+        
+        <div class="w-full flex justify-between mt-auto px-20">
+            <div class="text-center">
+                <div class="w-40 border-b border-black mb-2"></div>
+                <p class="text-sm text-gray-600">Date</p>
+            </div>
+            <div class="text-center">
+                <i data-lucide="heart" class="w-12 h-12 text-[#FFD700] fill-current mx-auto mb-2"></i>
+                <p class="text-sm font-bold text-[#FFD700]">OFFICIAL GOLD SEAL</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
