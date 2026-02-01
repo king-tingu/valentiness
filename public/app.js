@@ -247,14 +247,29 @@ function setupRealtime() {
     state.channel
         .on('broadcast', { event: 'tap' }, (payload) => handleRemoteTap(payload))
         .on('broadcast', { event: 'sync_request' }, () => {
-            // Someone joined! Send them our current charge so they are in sync
-            state.channel.send({ type: 'broadcast', event: 'sync_response', payload: { charge: state.charge } });
+            // Someone joined! Send them our current charge AND scores so they are in sync
+            state.channel.send({ 
+                type: 'broadcast', 
+                event: 'sync_response', 
+                payload: { 
+                    charge: state.charge,
+                    scores: state.scores 
+                } 
+            });
         })
         .on('broadcast', { event: 'sync_response' }, (payload) => {
-            // Received charge from someone already in the room
+            // Received state from someone already in the room
             if (payload.charge > state.charge) {
                 state.charge = payload.charge;
                 updateBatteryUI();
+            }
+            // Sync Scores
+            if (payload.scores) {
+                // Their "me" is my "partner". Their "partner" is "me".
+                // We take the max to ensure we don't overwrite with lower data
+                state.scores.partner = Math.max(state.scores.partner, payload.scores.me);
+                state.scores.me = Math.max(state.scores.me, payload.scores.partner);
+                updateScoreboard();
             }
         })
         .on('broadcast', { event: 'premium_unlock' }, () => activatePremium())
