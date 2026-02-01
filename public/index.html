@@ -138,25 +138,41 @@
         <!-- Main Interaction Area (Hidden until joined) -->
         <div id="gameArea" class="hidden w-full flex-col items-center">
             
-            <!-- Jar of Hearts Container -->
-            <div id="jarContainer" class="w-48 h-64 border-4 border-white/20 rounded-b-[40px] rounded-t-[20px] p-1 relative mb-8 flex flex-col justify-end items-center overflow-hidden bg-white/5 backdrop-blur-sm shadow-2xl">
-                <!-- Jar Lid -->
-                <div class="absolute top-0 w-full h-4 bg-white/20 border-b border-white/10"></div>
-                
-                <!-- Heart Energy (Filling) -->
-                <div id="jarLevel" class="w-full bg-gradient-to-t from-brand-pink to-pink-400 transition-all duration-500 ease-out shadow-[0_0_20px_rgba(255,20,147,0.5)]" style="height: 0%;">
-                    <!-- Bubbles/Hearts inside liquid -->
-                    <div class="absolute inset-0 opacity-30 pointer-events-none">
-                        <div class="absolute bottom-10 left-4 animate-bounce">❤️</div>
-                        <div class="absolute bottom-20 right-6 animate-pulse">💖</div>
+            <!-- Realistic Glass Jar Container -->
+            <div id="jarContainer" class="w-48 h-64 relative mb-8 flex flex-col justify-end items-center group">
+                <!-- Glass Reflection & Shape -->
+                <div class="absolute inset-0 rounded-b-[3rem] rounded-t-[1rem] border-[3px] border-white/40 bg-white/5 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(255,20,147,0.3)] overflow-hidden z-20 pointer-events-none">
+                    <!-- Shine -->
+                    <div class="absolute top-0 left-2 w-4 h-full bg-gradient-to-b from-white/30 to-transparent rounded-full blur-[2px]"></div>
+                    <div class="absolute top-2 right-4 w-2 h-16 bg-white/20 rounded-full blur-[1px]"></div>
+                </div>
+
+                <!-- Jar Rim/Lid Area -->
+                <div class="absolute -top-1 w-52 h-6 border-[3px] border-white/30 bg-white/10 rounded-full z-30 shadow-sm backdrop-blur-md"></div>
+
+                <!-- Heart Liquid (Filling) -->
+                <div id="jarLevel" class="w-[96%] rounded-b-[2.5rem] bg-gradient-to-t from-[#FF1493] via-[#FF69B4] to-[#FFB6C1] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative z-10 flex items-end justify-center overflow-hidden" style="height: 0%; max-height: 98%; bottom: 4px;">
+                    <!-- Surface Tension / Liquid Top -->
+                    <div class="w-full h-3 bg-white/30 absolute top-0 blur-[1px]"></div>
+                    
+                    <!-- Floating Particles inside liquid -->
+                    <div class="absolute inset-0 w-full h-full">
+                        <div class="absolute bottom-4 left-4 text-xs animate-[bounce_3s_infinite]">❤️</div>
+                        <div class="absolute bottom-10 right-8 text-xs animate-[bounce_4s_infinite_0.5s]">💕</div>
+                        <div class="absolute bottom-20 left-10 text-xs animate-[bounce_5s_infinite_1s]">✨</div>
                     </div>
                 </div>
 
                 <!-- Charge Text -->
-                <span id="chargeText" class="absolute inset-0 flex items-center justify-center font-bold text-2xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] z-20">0%</span>
+                <span id="chargeText" class="absolute inset-0 flex items-center justify-center font-bold text-3xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-40 font-serif">0%</span>
                 
                 <!-- Floating Icon -->
                 <i data-lucide="sparkles" class="absolute -top-12 text-brand-gold w-10 h-10 animate-pulse hidden" id="chargingIcon"></i>
+                
+                <!-- Warning Toast (For Solo Tapping) -->
+                <div id="soloWarning" class="absolute -bottom-16 w-60 bg-red-500/90 text-white text-xs p-2 rounded-lg text-center hidden animate-bounce z-50 shadow-lg border border-red-400">
+                    Wait for your partner! ❤️<br>Take turns filling the jar.
+                </div>
             </div>
 
             <!-- Tap Button -->

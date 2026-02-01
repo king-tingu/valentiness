@@ -18,7 +18,8 @@ const state = {
     charge: 0,
     isPremium: false,
     channel: null,
-    isSender: false // Track if I am the creator
+    isSender: false, // Track if I am the creator
+    myConsecutiveTaps: 0 // Track turn-taking
 };
 
 // --- DOM Elements ---
@@ -59,6 +60,7 @@ const els = {
     messageReveal: document.getElementById('messageReveal'),
     finalMessage: document.getElementById('finalMessage'),
     statusIndicator: document.getElementById('statusIndicator'),
+    soloWarning: document.getElementById('soloWarning'), // New warning toast
     
     // Premium / Cert
     premiumBtn: document.getElementById('premiumBtn'),
@@ -345,26 +347,62 @@ function emitParticles(amount = 5) {
 
 // Tapping
 els.tapBtn.addEventListener('click', () => {
-    if (state.channel) {
-        state.channel.send({ type: 'broadcast', event: 'tap', payload: { sender: state.myName } });
+    // 1. Collaboration Check
+    if (state.myConsecutiveTaps >= 5) {
+        els.soloWarning.classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Error buzz
+        return;
     }
+
+    // 2. Broadcast Tap with explicit Charge value for sync
+    // Optimistically assume we will succeed to +1 locally, so send that future value
+    const nextCharge = Math.min(state.charge + 1, 100);
+
+    if (state.channel) {
+        state.channel.send({ 
+            type: 'broadcast', 
+            event: 'tap', 
+            payload: { 
+                sender: state.myName,
+                charge: nextCharge // Authoritative sync value
+            } 
+        });
+    }
+
+    state.myConsecutiveTaps++;
     if (navigator.vibrate) navigator.vibrate(50);
 });
 
 function handleRemoteTap(payload) {
-    // Sync Logic
+    const isSelf = payload.sender === state.myName;
+
+    // Reset restriction if partner tapped
+    if (!isSelf) {
+        state.myConsecutiveTaps = 0;
+        els.soloWarning.classList.add('hidden');
+    }
+
+    // Sync Logic: Adopt the higher charge to fix desyncs (83 vs 87)
+    // If payload.charge is present, use it. Otherwise fallback to local + 1.
+    const remoteCharge = payload.charge || (state.charge + 1);
+    
+    // We update local state if the remote is ahead, OR if it's a standard increment
+    // Logic: Always take the max of (local, remote) to ensure we never go backward
+    const newCharge = Math.max(state.charge, remoteCharge);
+
     if (state.charge < 100) {
-        state.charge += 1; // 1% per tap for better collaboration
+        state.charge = newCharge;
+        
+        // Cap at 100
         if (state.charge >= 100) {
             state.charge = 100;
             updateBatteryUI();
-            revealMessage(); // Trigger immediately
+            revealMessage();
             return;
         }
         updateBatteryUI();
         
         // Visuals
-        const isSelf = payload.sender === state.myName;
         const particleCount = state.isPremium ? 10 : 5;
         emitParticles(particleCount);
 
