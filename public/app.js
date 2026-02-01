@@ -235,12 +235,49 @@ function setupRealtime() {
     state.channel
         .on('broadcast', { event: 'tap' }, (payload) => handleRemoteTap(payload))
         .on('broadcast', { event: 'premium_unlock' }, () => activatePremium())
-        .subscribe((status) => {
+        .on('presence', { event: 'sync' }, () => updatePresence()) // Listen for joins/leaves
+        .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 els.statusIndicator.classList.replace('bg-yellow-500', 'bg-green-500');
+                // Track my presence in the room
+                await state.channel.track({ user: state.myName, online_at: new Date().toISOString() });
             }
         });
 }
+
+function updatePresence() {
+    const newState = state.channel.presenceState();
+    const totalUsers = Object.keys(newState).length;
+    const isPartnerConnected = totalUsers >= 2;
+
+    const tapBtn = els.tapBtn;
+    const infoText = document.querySelector('#gameArea p.animate-pulse');
+
+    if (isPartnerConnected) {
+        // Enable Game
+        tapBtn.disabled = false;
+        tapBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+        tapBtn.classList.add('cursor-pointer');
+        
+        if (infoText) {
+            infoText.textContent = "Partner Connected! Tap the heart together!";
+            infoText.classList.add('text-brand-pink');
+            infoText.classList.remove('text-gray-400');
+        }
+    } else {
+        // Disable Game
+        tapBtn.disabled = true;
+        tapBtn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+        tapBtn.classList.remove('cursor-pointer');
+        
+        if (infoText) {
+            infoText.textContent = "Waiting for partner to join...";
+            infoText.classList.remove('text-brand-pink');
+            infoText.classList.add('text-gray-400');
+        }
+    }
+}
+
 
 // Reuse Particle Logic
 const canvas = document.getElementById('particleCanvas');
