@@ -249,6 +249,16 @@ function setupRealtime() {
             }
         })
         .on('broadcast', { event: 'premium_unlock' }, () => activatePremium())
+        // LISTEN FOR DB CHANGES (Manual updates or Webhook updates)
+        .on(
+            'postgres_changes', 
+            { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${state.roomId}` }, 
+            (payload) => {
+                if (payload.new && payload.new.is_premium) {
+                    activatePremium();
+                }
+            }
+        )
         .on('presence', { event: 'sync' }, () => updatePresence()) // Listen for joins/leaves
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
