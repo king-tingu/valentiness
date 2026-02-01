@@ -52,7 +52,8 @@ const els = {
 
     // Game Elements
     tapBtn: document.getElementById('tapBtn'),
-    batteryLevel: document.getElementById('batteryLevel'),
+    jarLevel: document.getElementById('jarLevel'),
+    jarContainer: document.getElementById('jarContainer'),
     chargeText: document.getElementById('chargeText'),
     chargingIcon: document.getElementById('chargingIcon'),
     messageReveal: document.getElementById('messageReveal'),
@@ -234,6 +235,17 @@ function setupRealtime() {
 
     state.channel
         .on('broadcast', { event: 'tap' }, (payload) => handleRemoteTap(payload))
+        .on('broadcast', { event: 'sync_request' }, () => {
+            // Someone joined! Send them our current charge so they are in sync
+            state.channel.send({ type: 'broadcast', event: 'sync_response', payload: { charge: state.charge } });
+        })
+        .on('broadcast', { event: 'sync_response' }, (payload) => {
+            // Received charge from someone already in the room
+            if (payload.charge > state.charge) {
+                state.charge = payload.charge;
+                updateBatteryUI();
+            }
+        })
         .on('broadcast', { event: 'premium_unlock' }, () => activatePremium())
         .on('presence', { event: 'sync' }, () => updatePresence()) // Listen for joins/leaves
         .subscribe(async (status) => {
@@ -241,6 +253,9 @@ function setupRealtime() {
                 els.statusIndicator.classList.replace('bg-yellow-500', 'bg-green-500');
                 // Track my presence in the room
                 await state.channel.track({ user: state.myName, online_at: new Date().toISOString() });
+                
+                // Ask for current state from anyone already there
+                state.channel.send({ type: 'broadcast', event: 'sync_request', payload: {} });
             }
         });
 }
@@ -339,7 +354,7 @@ els.tapBtn.addEventListener('click', () => {
 function handleRemoteTap(payload) {
     // Sync Logic
     if (state.charge < 100) {
-        state.charge += 2; // Increment
+        state.charge += 1; // 1% per tap for better collaboration
         if (state.charge >= 100) {
             state.charge = 100;
             updateBatteryUI();
@@ -372,9 +387,18 @@ function handleRemoteTap(payload) {
     }
 }
 
+function updateBatteryUI() {
+    els.jarLevel.style.height = `${state.charge}%`;
+    els.chargeText.textContent = `${state.charge}%`;
+
+    // Add a "glow" that intensifies with charge
+    const glowStrength = state.charge / 2;
+    els.jarContainer.style.boxShadow = `0 0 ${glowStrength}px rgba(255, 20, 147, ${state.charge/100})`;
+}
+
 function revealMessage() {
     // Prevent double execution
-    if (els.batteryContainer.classList.contains('hidden')) return;
+    if (els.jarContainer.classList.contains('hidden')) return;
 
     // 1. Celebration!
     confetti({
@@ -385,7 +409,7 @@ function revealMessage() {
     });
 
     // 2. Hide Game UI
-    els.batteryContainer.classList.add('hidden');
+    els.jarContainer.classList.add('hidden');
     els.tapBtn.classList.add('hidden');
     document.querySelector('#gameArea p.animate-pulse').classList.add('hidden'); // Hide instruction text
 
