@@ -88,9 +88,27 @@
                 </div>
 
                 <div class="space-y-3">
-                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">Our Song (YouTube Link - Optional)</label>
-                    <input type="text" id="youtubeInput" placeholder="Paste YouTube URL here..." 
-                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-sm">
+                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">Our Song (Search YouTube)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="songSearchInput" placeholder="e.g. Perfect - Ed Sheeran" 
+                            class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-sm">
+                        <button id="songSearchBtn" class="bg-gray-700 hover:bg-brand-pink text-white p-4 rounded-xl transition-colors">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Search Results -->
+                    <div id="searchResults" class="hidden flex-col gap-2 mt-2">
+                        <!-- Items injected by JS -->
+                    </div>
+                    
+                    <!-- Selected Song Preview -->
+                    <div id="selectedSongPreview" class="hidden bg-brand-pink/20 border border-brand-pink p-3 rounded-xl flex items-center justify-between">
+                        <span id="selectedSongTitle" class="text-xs font-bold truncate">Selected Song</span>
+                        <button id="clearSongBtn" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+
+                    <input type="hidden" id="selectedVideoId">
                 </div>
 
                 <button id="createBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95 mt-4">

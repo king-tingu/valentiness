@@ -45,8 +45,16 @@ const els = {
     // Share Inputs
     shareLinkInput: document.getElementById('shareLinkInput'),
     
-    // Music
-    youtubeInput: document.getElementById('youtubeInput'),
+    // Music Search
+    songSearchInput: document.getElementById('songSearchInput'),
+    songSearchBtn: document.getElementById('songSearchBtn'),
+    searchResults: document.getElementById('searchResults'),
+    selectedVideoId: document.getElementById('selectedVideoId'),
+    selectedSongPreview: document.getElementById('selectedSongPreview'),
+    selectedSongTitle: document.getElementById('selectedSongTitle'),
+    clearSongBtn: document.getElementById('clearSongBtn'),
+    
+    // Music Player
     musicControls: document.getElementById('musicControls'),
     ytPlayer: document.getElementById('ytPlayer'),
     musicToggleBtn: document.getElementById('musicToggleBtn'),
@@ -168,13 +176,78 @@ function getYoutubeId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
+// --- Music Search Logic ---
+els.songSearchBtn.addEventListener('click', async () => {
+    const query = els.songSearchInput.value.trim();
+    if (!query) return;
+
+    els.songSearchBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>';
+    
+    try {
+        // Use a public Invidious instance for search (No API Key needed)
+        // Fallback instances: invidious.jing.rocks, invidious.io
+        const response = await fetch(`https://invidious.jing.rocks/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
+        const data = await response.json();
+        
+        // Take top 3 results
+        const results = data.slice(0, 3);
+        
+        els.searchResults.innerHTML = '';
+        els.searchResults.classList.remove('hidden');
+
+        if (results.length === 0) {
+            els.searchResults.innerHTML = '<p class="text-xs text-gray-500 text-center">No results found.</p>';
+        }
+
+        results.forEach(video => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-3 p-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors';
+            div.innerHTML = `
+                <img src="${video.videoThumbnails[1]?.url || video.videoThumbnails[0]?.url}" class="w-12 h-9 object-cover rounded-md">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-white truncate">${video.title}</p>
+                    <p class="text-[10px] text-gray-400 truncate">${video.author}</p>
+                </div>
+            `;
+            div.addEventListener('click', () => selectSong(video));
+            els.searchResults.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error(err);
+        alert("Search failed. Please try a different song name.");
+    } finally {
+        els.songSearchBtn.innerHTML = '<i data-lucide="search" class="w-5 h-5"></i>';
+        lucide.createIcons();
+    }
+});
+
+function selectSong(video) {
+    els.selectedVideoId.value = video.videoId;
+    els.selectedSongTitle.textContent = video.title;
+    
+    els.searchResults.classList.add('hidden');
+    els.songSearchInput.value = '';
+    
+    els.selectedSongPreview.classList.remove('hidden');
+    els.selectedSongPreview.classList.add('flex');
+}
+
+els.clearSongBtn.addEventListener('click', () => {
+    els.selectedVideoId.value = '';
+    els.selectedSongPreview.classList.add('hidden');
+    els.selectedSongPreview.classList.remove('flex');
+});
+
+
 // --- Logic: Creation Flow ---
 els.createBtn.addEventListener('click', async () => {
     console.log("Create Button Clicked");
     const valName = els.valentineNameInput.value.trim();
     const senderName = els.senderNameInput.value.trim();
     const msg = els.secretMessageInput.value.trim();
-    const ytUrl = els.youtubeInput.value.trim();
+    // const ytUrl = els.youtubeInput.value.trim(); // Removed
+    const ytId = els.selectedVideoId.value;
 
     if (!valName || !senderName || !msg) {
         return alert("Please fill in all fields to create your Valentine!");
@@ -184,12 +257,8 @@ els.createBtn.addEventListener('click', async () => {
     const roomId = Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
     const msgEnc = btoa(unescape(encodeURIComponent(msg)));
     let ytParam = '';
-    let ytId = null;
-
-    if (ytUrl) {
-        ytId = getYoutubeId(ytUrl);
-        if (ytId) ytParam = `&yt=${ytId}`;
-    }
+    
+    if (ytId) ytParam = `&yt=${ytId}`;
     
     // Safer baseUrl for local files
     const baseUrl = window.location.href.split('?')[0];
@@ -202,7 +271,7 @@ els.createBtn.addEventListener('click', async () => {
             partner_1_name: senderName,
             partner_2_name: valName,
             message: msg,
-            // youtube_id: ytId, // Optional: Add this column to DB if you want strict persistence
+            // youtube_id: ytId, 
             is_premium: false
         });
 
