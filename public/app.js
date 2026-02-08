@@ -507,10 +507,21 @@ function emitParticles(amount = 5) {
 // Tapping
 els.tapBtn.addEventListener('click', () => {
     // 1. Collaboration Check
-    if (state.myConsecutiveTaps >= 5) {
+    if (state.myConsecutiveTaps >= 10) { // Increased threshold slightly
+        els.soloWarning.textContent = "Wait for your partner! ❤️ Take turns filling the jar.";
         els.soloWarning.classList.remove('hidden');
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Error buzz
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
         return;
+    }
+
+    // 2. Final Charge Collaboration Check (Stop at 95% if partner < 5 taps)
+    if (state.charge >= 95 && state.scores.partner < 5) {
+        els.soloWarning.textContent = "Partner needs to help! ❤️ Both must tap to finish.";
+        els.soloWarning.classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate([200]);
+        return;
+    } else {
+        els.soloWarning.classList.add('hidden');
     }
 
     let points = 1;
@@ -540,7 +551,7 @@ els.tapBtn.addEventListener('click', () => {
                 sender: state.myName,
                 sessionId: state.mySessionId, // Unique ID
                 charge: nextCharge,
-                score: state.scores.me, // Send my new score
+                scores: state.scores, // Send FULL scores object for better sync
                 isCrit: isCrit
             } 
         });
@@ -559,8 +570,14 @@ function handleRemoteTap(payload) {
         state.myConsecutiveTaps = 0;
         els.soloWarning.classList.add('hidden');
         
-        // Update Partner Score
-        if (payload.score !== undefined) {
+        // Update Partner Score & Sync Self
+        if (payload.scores) {
+            state.scores.partner = payload.scores.me;
+            // Optional: Recovery for self if we missed updates (only increase)
+            state.scores.me = Math.max(state.scores.me, payload.scores.partner);
+            updateScoreboard();
+        } else if (payload.score !== undefined) {
+            // Legacy fallback
             state.scores.partner = payload.score;
             updateScoreboard();
         }
@@ -660,6 +677,10 @@ function revealMessage() {
     
     // Display the message based on who is viewing
     if (state.isSender) {
+        // Change Header for Sender
+        const header = els.messageReveal.querySelector('h3');
+        if (header) header.textContent = "Gift Delivered! 💌";
+
         els.finalMessage.innerHTML = `
             <span class="block text-sm text-pink-400 mb-2">You sent:</span>
             <span class="text-2xl font-serif text-pink-600">"${state.targetMessage.replace('Your message will be revealed to ' + state.partnerName, '...')}"</span>
