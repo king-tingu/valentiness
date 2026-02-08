@@ -697,54 +697,150 @@ function revealMessage() {
     els.downloadCertBtn.classList.add('animate-bounce');
 }
 
-// Premium & Cert
-els.premiumBtn.addEventListener('click', async () => {
-    // 1. Real Pesapal Integration (Disabled)
-    alert("Premium payments are currently disabled. Enjoy the free Pink theme! 💖");
-    return;
-    /*
-    if (!confirm("Upgrade to Premium for KES 10.00? This unlocks the Gold Theme and Love Certificate.")) return;
+// Premium & Payment Logic
+const paymentEls = {
+    form: document.getElementById('paymentForm'),
+    phoneInput: document.getElementById('mpesaPhone'),
+    payBtn: document.getElementById('confirmPayBtn'),
+    status: document.getElementById('paymentStatus')
+};
 
-    els.premiumBtn.textContent = "Processing...";
-    els.premiumBtn.disabled = true;
+els.premiumBtn.addEventListener('click', () => {
+    // Show Payment Form
+    els.premiumBtn.classList.add('hidden');
+    paymentEls.form.classList.remove('hidden');
+    paymentEls.phoneInput.focus();
+});
+
+paymentEls.payBtn.addEventListener('click', async () => {
+    let phone = paymentEls.phoneInput.value.replace(/\D/g, ''); // Remove non-digits
+    
+    // Format to 254...
+    if (phone.startsWith('0')) phone = '254' + phone.substring(1);
+    if (phone.startsWith('7') || phone.startsWith('1')) phone = '254' + phone;
+
+    if (phone.length !== 12) {
+        return alert("Please enter a valid M-Pesa number (e.g., 0712...)");
+    }
+
+    // Disable UI
+    paymentEls.payBtn.disabled = true;
+    paymentEls.payBtn.innerHTML = '<span class="animate-pulse">Processing...</span>';
+    paymentEls.status.textContent = "Check your phone for the STK Push...";
+    paymentEls.status.classList.remove('hidden');
 
     try {
-        const response = await fetch('/api/pay', {
+        // 1. Initiate Payment
+        const formData = new FormData();
+        formData.append('phone', phone);
+        formData.append('amount', '10');
+
+        const response = await fetch('https://mpesa-stk.giftedtech.co.ke/api/payMaka.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                roomId: state.roomId,
-                name: state.myName,
-                email: "user@example.com" // In a real app, you might ask for this
-            })
+            body: formData // Using FormData as typical for PHP scripts, JSON is also possible but FormData is safer for unknown PHP configs
         });
 
         const data = await response.json();
-
-        if (data.redirect_url) {
-            // Redirect user to Pesapal payment page
-            window.location.href = data.redirect_url;
+        
+        if (data.ResponseCode === "0" || data.CheckoutRequestID) {
+            paymentEls.status.textContent = "Enter PIN on your phone...";
+            paymentEls.status.className = "text-xs text-center font-bold text-green-500 animate-pulse block";
+            
+            // Start Polling
+            pollTransaction(data.CheckoutRequestID);
         } else {
-            throw new Error(data.error || "Payment initialization failed");
+            throw new Error(data.errorMessage || "Failed to initiate payment");
         }
 
     } catch (err) {
         console.error(err);
-        alert("Payment Error: " + err.message);
-        els.premiumBtn.textContent = "Unlock Premium (Gold Theme)";
-        els.premiumBtn.disabled = false;
+        alert("Payment Failed: " + err.message);
+        resetPaymentUI();
     }
-    */
 });
+
+function resetPaymentUI() {
+    paymentEls.payBtn.disabled = false;
+    paymentEls.payBtn.innerHTML = '<span>Pay KES 10 Now</span>';
+    paymentEls.status.classList.add('hidden');
+}
+
+async function pollTransaction(checkoutRequestId) {
+    let attempts = 0;
+    const maxAttempts = 20; // 1 minute timeout (3s interval)
+
+    const interval = setInterval(async () => {
+        attempts++;
+        if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            alert("Payment timeout. Please try again.");
+            resetPaymentUI();
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('CheckoutRequestID', checkoutRequestId);
+
+            const res = await fetch('https://mpesa-stk.giftedtech.co.ke/api/verify-transaction.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await res.json();
+            console.log("Poll Result:", data);
+
+            // Check for success (Adjust based on actual API response structure)
+            // Common M-Pesa response: ResultCode 0 = Success
+            if (data.ResultCode === "0" || data.status === "success" || data.ResultDesc === "The service request is processed successfully.") {
+                clearInterval(interval);
+                handlePaymentSuccess();
+            } else if (data.ResultCode && data.ResultCode !== "0" && data.ResultCode !== "1032") { 
+                // 1032 is "Cancelled by user" usually, others are errors
+                // If it's just "pending", we keep polling. If it's an explicit error:
+                 // clearInterval(interval);
+                 // alert("Transaction failed: " + data.ResultDesc);
+                 // resetPaymentUI();
+            }
+
+        } catch (e) {
+            console.warn("Polling error:", e);
+        }
+    }, 3000);
+}
+
+async function handlePaymentSuccess() {
+    paymentEls.status.textContent = "Payment Successful! Unlocking...";
+    
+    // Update Database
+    if (supabaseClient && state.roomId) {
+        await supabaseClient.from('rooms').update({ is_premium: true }).eq('id', state.roomId);
+        // The realtime subscription will pick this up and call activatePremium()
+        // But we can also call it directly for instant feedback
+        activatePremium();
+    } else {
+        activatePremium(); // Fallback for local testing
+    }
+    
+    // Hide Form
+    paymentEls.form.classList.add('hidden');
+}
 
 function activatePremium() {
     state.isPremium = true;
     document.body.classList.add('gold-theme');
+    
+    // Update Premium Button UI to "Paid" state
+    els.premiumBtn.classList.remove('hidden');
     els.premiumBtn.innerHTML = `<i data-lucide="check"></i> Premium Active`;
     els.premiumBtn.classList.add('bg-yellow-400', 'text-white', 'cursor-default');
     els.premiumBtn.disabled = true;
+    
     els.adBanner.style.display = 'none';
-    // if (state.charge >= 100) els.downloadCertBtn.classList.remove('hidden'); // Already visible
+    
+    // Hide payment form if open
+    if (paymentEls && paymentEls.form) paymentEls.form.classList.add('hidden');
+
     alert("Premium Unlocked! Gold Theme & Certificate enabled.");
 }
 

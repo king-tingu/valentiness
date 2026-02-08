@@ -486,8 +486,18 @@
                 </div>
                 
                 <button id="premiumBtn" class="w-full border-2 border-yellow-400 text-yellow-600 p-4 rounded-xl hover:bg-yellow-400 hover:text-white transition-all flex items-center justify-center gap-3 font-bold">
-                    <i data-lucide="crown"></i> Unlock Golden Theme & Certificate
+                    <i data-lucide="crown"></i> Unlock Golden Theme (KES 10)
                 </button>
+
+                <!-- Payment Form (Hidden) -->
+                <div id="paymentForm" class="hidden mt-4 space-y-3 animate-fade-in">
+                    <p class="text-xs text-center text-gray-500">Enter M-Pesa number to receive prompt</p>
+                    <input type="tel" id="mpesaPhone" placeholder="0712 345 678" class="text-center tracking-widest font-bold">
+                    <button id="confirmPayBtn" class="submit-btn bg-gradient-to-r from-green-500 to-green-600 text-white">
+                        <span>Pay KES 10 Now</span>
+                    </button>
+                    <p id="paymentStatus" class="text-xs text-center font-bold text-gray-400 hidden">Waiting for PIN...</p>
+                </div>
             </div>
         </div>
     </div>
