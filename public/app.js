@@ -713,34 +713,48 @@ els.premiumBtn.addEventListener('click', () => {
 });
 
 paymentEls.payBtn.addEventListener('click', async () => {
-    let phone = paymentEls.phoneInput.value.replace(/\D/g, ''); // Remove non-digits
-    
-    // Format to 254...
-    if (phone.startsWith('0')) phone = '254' + phone.substring(1);
-    if (phone.startsWith('7') || phone.startsWith('1')) phone = '254' + phone;
+    let rawPhone = paymentEls.phoneInput.value.replace(/\D/g, ''); // Remove all non-digits
+    let phone = rawPhone;
 
-    if (phone.length !== 12) {
-        return alert("Please enter a valid M-Pesa number (e.g., 0712...)");
+    // Normalization Logic
+    if (phone.startsWith('0')) {
+        // 0712... -> 254712...
+        phone = '254' + phone.substring(1);
+    } else if (phone.startsWith('7') || phone.startsWith('1')) {
+        // 712... -> 254712...
+        phone = '254' + phone;
+    }
+    // If it starts with 254, leave it.
+
+    console.log(`Original: ${rawPhone}, Formatted: ${phone}`);
+
+    // Strict Validation
+    if (phone.length !== 12 || !phone.startsWith('254')) {
+        return alert("Invalid Phone Number! Please enter format 07xx... or 2547xx...");
     }
 
     // Disable UI
     paymentEls.payBtn.disabled = true;
     paymentEls.payBtn.innerHTML = '<span class="animate-pulse">Processing...</span>';
-    paymentEls.status.textContent = "Check your phone for the STK Push...";
+    paymentEls.status.textContent = `Initiating STK Push to ${phone}...`;
     paymentEls.status.classList.remove('hidden');
 
     try {
-        // 1. Initiate Payment
-        const formData = new FormData();
+        // 1. Initiate Payment (Using URLSearchParams for standard $_POST)
+        const formData = new URLSearchParams();
         formData.append('phone', phone);
         formData.append('amount', '10');
 
         const response = await fetch('https://mpesa-stk.giftedtech.co.ke/api/payMaka.php', {
             method: 'POST',
-            body: formData // Using FormData as typical for PHP scripts, JSON is also possible but FormData is safer for unknown PHP configs
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
         });
 
         const data = await response.json();
+        console.log("Pay API Response:", data);
         
         if (data.ResponseCode === "0" || data.CheckoutRequestID) {
             paymentEls.status.textContent = "Enter PIN on your phone...";
@@ -749,12 +763,13 @@ paymentEls.payBtn.addEventListener('click', async () => {
             // Start Polling
             pollTransaction(data.CheckoutRequestID);
         } else {
-            throw new Error(data.errorMessage || "Failed to initiate payment");
+            // Show specific error from API if available
+            throw new Error(data.errorMessage || data.ResponseDescription || "Failed to initiate payment");
         }
 
     } catch (err) {
-        console.error(err);
-        alert("Payment Failed: " + err.message);
+        console.error("Payment Error:", err);
+        alert("Payment Error: " + err.message);
         resetPaymentUI();
     }
 });
@@ -779,11 +794,12 @@ async function pollTransaction(checkoutRequestId) {
         }
 
         try {
-            const formData = new FormData();
+            const formData = new URLSearchParams();
             formData.append('CheckoutRequestID', checkoutRequestId);
 
             const res = await fetch('https://mpesa-stk.giftedtech.co.ke/api/verify-transaction.php', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData
             });
             
