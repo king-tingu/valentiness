@@ -45,17 +45,6 @@ const els = {
     // Share Inputs
     shareLinkInput: document.getElementById('shareLinkInput'),
     
-    // Music Search
-    songSearchInput: document.getElementById('songSearchInput'),
-    songSearchBtn: document.getElementById('songSearchBtn'),
-    searchResults: document.getElementById('searchResults'),
-    selectedVideoId: document.getElementById('selectedVideoId'),
-    selectedSongPreview: document.getElementById('selectedSongPreview'),
-    selectedSongTitle: document.getElementById('selectedSongTitle'),
-    clearSongBtn: document.getElementById('clearSongBtn'),
-    manualEntryToggle: document.getElementById('manualEntryToggle'),
-    manualYoutubeInput: document.getElementById('manualYoutubeInput'),
-    
     // Music Player
     musicControls: document.getElementById('musicControls'),
     ytPlayer: document.getElementById('ytPlayer'),
@@ -178,98 +167,6 @@ function getYoutubeId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// --- Music Search Logic ---
-els.songSearchBtn.addEventListener('click', async () => {
-    const query = els.songSearchInput.value.trim();
-    if (!query) return;
-
-    els.songSearchBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>';
-    
-    // List of Piped instances (More reliable than Invidious)
-    const instances = [
-        'https://pipedapi.kavin.rocks',
-        'https://api.piped.io',
-        'https://piped-api.garudalinux.org'
-    ];
-
-    let results = [];
-    let success = false;
-
-    for (const base of instances) {
-        try {
-            console.log(`Trying search on: ${base}`);
-            const response = await fetch(`${base}/search?q=${encodeURIComponent(query)}&filter=videos`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            
-            const data = await response.json();
-            results = data.items.slice(0, 3); // Top 3
-            success = true;
-            break; // Stop if successful
-        } catch (e) {
-            console.warn(`Failed on ${base}:`, e);
-        }
-    }
-    
-    // Render Results
-    els.searchResults.innerHTML = '';
-    els.searchResults.classList.remove('hidden');
-
-    if (!success || results.length === 0) {
-        els.searchResults.innerHTML = '<p class="text-xs text-gray-500 text-center">Search failed. Please paste the YouTube URL directly below.</p>';
-        // Auto-show manual input
-        els.manualYoutubeInput.classList.remove('hidden');
-        els.manualYoutubeInput.focus();
-    } else {
-        results.forEach(video => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-3 p-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors';
-            
-            // Extract ID from Piped URL "/watch?v=ID"
-            const videoId = video.url.split('v=')[1]; 
-
-            div.innerHTML = `
-                <img src="${video.thumbnail}" class="w-12 h-9 object-cover rounded-md">
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-white truncate">${video.title}</p>
-                    <p class="text-[10px] text-gray-400 truncate">${video.uploaderName}</p>
-                </div>
-            `;
-            // Standardize object for selectSong
-            div.addEventListener('click', () => selectSong({ videoId, title: video.title }));
-            els.searchResults.appendChild(div);
-        });
-    }
-
-    els.songSearchBtn.innerHTML = '<i data-lucide="search" class="w-5 h-5"></i>';
-    lucide.createIcons();
-});
-
-function selectSong(video) {
-    els.selectedVideoId.value = video.videoId;
-    els.selectedSongTitle.textContent = video.title;
-    
-    els.searchResults.classList.add('hidden');
-    els.songSearchInput.value = '';
-    
-    els.selectedSongPreview.classList.remove('hidden');
-    els.selectedSongPreview.classList.add('flex');
-}
-
-els.clearSongBtn.addEventListener('click', () => {
-    els.selectedVideoId.value = '';
-    els.selectedSongPreview.classList.add('hidden');
-    els.selectedSongPreview.classList.remove('flex');
-});
-
-// Manual Entry Toggle
-els.manualEntryToggle.addEventListener('click', () => {
-    els.manualYoutubeInput.classList.toggle('hidden');
-    if (!els.manualYoutubeInput.classList.contains('hidden')) {
-        els.manualYoutubeInput.focus();
-    }
-});
-
-
 // --- Logic: Creation Flow ---
 els.createBtn.addEventListener('click', async () => {
     console.log("Create Button Clicked");
@@ -277,13 +174,11 @@ els.createBtn.addEventListener('click', async () => {
     const senderName = els.senderNameInput.value.trim();
     const msg = els.secretMessageInput.value.trim();
     
-    // Check Search ID OR Manual Link
-    let ytId = els.selectedVideoId.value;
-    const manualLink = els.manualYoutubeInput.value.trim();
+    // Check Search ID OR Manual Link (Music Removed)
+    let ytId = null; 
+    const manualLink = ""; // Music removed
     
-    if (!ytId && manualLink) {
-        ytId = getYoutubeId(manualLink);
-    }
+    // if (!ytId && manualLink) { ytId = getYoutubeId(manualLink); }
 
     if (!valName || !senderName || !msg) {
         return alert("Please fill in all fields to create your Valentine!");
@@ -776,15 +671,17 @@ function revealMessage() {
         `;
     }
     
-    if (state.isPremium) {
-        els.downloadCertBtn.classList.remove('hidden');
-        els.downloadCertBtn.classList.add('animate-bounce');
-    }
+    // Always show certificate button now
+    els.downloadCertBtn.classList.remove('hidden');
+    els.downloadCertBtn.classList.add('animate-bounce');
 }
 
 // Premium & Cert
 els.premiumBtn.addEventListener('click', async () => {
-    // 1. Real Pesapal Integration
+    // 1. Real Pesapal Integration (Disabled)
+    alert("Premium payments are currently disabled. Enjoy the free Pink theme! 💖");
+    return;
+    /*
     if (!confirm("Upgrade to Premium for KES 10.00? This unlocks the Gold Theme and Love Certificate.")) return;
 
     els.premiumBtn.textContent = "Processing...";
@@ -816,6 +713,7 @@ els.premiumBtn.addEventListener('click', async () => {
         els.premiumBtn.textContent = "Unlock Premium (Gold Theme)";
         els.premiumBtn.disabled = false;
     }
+    */
 });
 
 function activatePremium() {
@@ -825,27 +723,58 @@ function activatePremium() {
     els.premiumBtn.classList.add('bg-yellow-400', 'text-white', 'cursor-default');
     els.premiumBtn.disabled = true;
     els.adBanner.style.display = 'none';
-    if (state.charge >= 100) els.downloadCertBtn.classList.remove('hidden');
+    // if (state.charge >= 100) els.downloadCertBtn.classList.remove('hidden'); // Already visible
     alert("Premium Unlocked! Gold Theme & Certificate enabled.");
 }
 
 els.downloadCertBtn.addEventListener('click', () => {
-    // Determine names for certificate
-    // If Sender: My Name & Partner Name
-    // If Receiver: Partner Name (Sender) & My Name (Receiver)
-    // Actually, usually certificates are "Romeo & Juliet". Order doesn't matter much, but let's try to be consistent.
-    
-    // state.partnerName is "The other person"
-    // state.myName is "Me"
-    
     els.certName1.textContent = state.myName;
     els.certName2.textContent = state.partnerName;
     
-    const element = els.certificateTemplate;
-    element.classList.remove('hidden');
-    element.style.display = 'flex';
+    // THEME LOGIC
+    const cert = els.certificateTemplate;
+    const sealIcon = cert.querySelector('.cert-seal-icon');
+    const sealContainer = cert.querySelector('.cert-seal-container');
+    const sealText = cert.querySelector('.cert-seal-text');
+    const title = cert.querySelector('.cert-title');
+    const borders = cert.querySelectorAll('.cert-border');
+    const highlight = cert.querySelector('.cert-highlight');
+
+    if (state.isPremium) {
+        // GOLD THEME
+        cert.style.borderColor = '#FFD700'; // Gold
+        title.className = 'text-5xl font-serif mb-6 cert-title text-yellow-600';
+        highlight.className = 'cert-highlight font-bold text-yellow-600';
+        
+        sealIcon.setAttribute('class', 'w-12 h-12 cert-seal-icon text-yellow-400 fill-yellow-400');
+        sealContainer.className = 'w-24 h-24 rounded-full flex items-center justify-center border-4 mb-2 cert-seal-container border-yellow-400 bg-yellow-50';
+        sealText.className = 'text-xs font-bold uppercase cert-seal-text text-yellow-600';
+
+        borders.forEach(b => {
+            b.classList.add('border-yellow-200');
+            b.classList.remove('border-pink-200');
+        });
+
+    } else {
+        // PINK THEME (Default)
+        cert.style.borderColor = '#ffc2d1'; // Pink
+        title.className = 'text-5xl font-serif mb-6 cert-title text-pink-500';
+        highlight.className = 'cert-highlight font-bold text-pink-500';
+
+        sealIcon.setAttribute('class', 'w-12 h-12 cert-seal-icon text-pink-400 fill-pink-400');
+        sealContainer.className = 'w-24 h-24 rounded-full flex items-center justify-center border-4 mb-2 cert-seal-container border-pink-300 bg-pink-50';
+        sealText.className = 'text-xs font-bold uppercase cert-seal-text text-pink-500';
+
+        borders.forEach(b => {
+            b.classList.add('border-pink-200');
+            b.classList.remove('border-yellow-200');
+        });
+    }
+    
+    cert.classList.remove('hidden');
+    cert.style.display = 'flex';
     const opt = { margin: 1, filename: 'Love-Certificate.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } };
-    html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; element.classList.add('hidden'); });
+    html2pdf().set(opt).from(cert).save().then(() => { cert.style.display = 'none'; cert.classList.add('hidden'); });
 });
 
 // Run Init

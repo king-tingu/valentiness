@@ -66,10 +66,11 @@
 
         .heart {
             position: absolute;
-            font-size: 20px;
-            color: rgba(255, 105, 135, 0.3);
+            font-size: 24px; /* Slightly larger */
+            color: rgba(255, 105, 135, 0.6); /* Higher opacity for visibility */
             animation: float-up 15s infinite;
             opacity: 0;
+            text-shadow: 0 0 5px rgba(255, 105, 135, 0.3);
         }
 
         @keyframes float-up {
@@ -89,105 +90,19 @@
             }
         }
 
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 30px;
-            padding: 50px 40px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(255, 105, 135, 0.3);
-            position: relative;
-            z-index: 10;
-            animation: slideIn 0.8s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .heart-icon {
-            font-size: 60px;
-            animation: heartbeat 1.5s ease-in-out infinite;
-            display: inline-block;
-        }
-
-        @keyframes heartbeat {
-            0%, 100% {
-                transform: scale(1);
-            }
-            10%, 30% {
-                transform: scale(1.1);
-            }
-            20%, 40% {
-                transform: scale(1);
-            }
-        }
-
-        h1.title {
-            color: #d63447;
-            font-size: 2.5em;
-            margin: 20px 0 10px;
-            font-weight: normal;
-            animation: fadeIn 1s ease-in 0.3s both;
-        }
-
-        .subtitle {
-            color: #ff6b9d;
-            font-size: 1.1em;
-            font-style: italic;
-            animation: fadeIn 1s ease-in 0.5s both;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-            animation: fadeIn 1s ease-in both;
-        }
-
-        .form-group:nth-child(1) { animation-delay: 0.6s; }
-        .form-group:nth-child(2) { animation-delay: 0.7s; }
-        .form-group:nth-child(3) { animation-delay: 0.8s; }
-
-        label {
-            display: block;
-            color: #d63447;
-            font-size: 1em;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
+        /* ... container ... */
 
         input, textarea {
             width: 100%;
-            padding: 15px 20px;
+            padding: 16px 20px;
             border: 2px solid #ffc2d1;
             border-radius: 15px;
-            font-size: 1em;
+            font-size: 16px; /* Prevent zoom on mobile */
             font-family: 'Georgia', serif;
             transition: all 0.3s ease;
-            background: rgba(255, 240, 245, 0.5);
+            background: rgba(255, 255, 255, 0.9); /* More opaque for readability */
             color: #333;
+            box-shadow: 0 4px 6px rgba(255, 182, 193, 0.1);
         }
 
         input:focus, textarea:focus {
@@ -345,36 +260,6 @@
                     <textarea id="secretMessageInput" placeholder="Write your heartfelt message here..." required></textarea>
                 </div>
 
-                <!-- Music Search (Retained but styled) -->
-                <div class="form-group">
-                    <label class="text-xs text-brand-pink font-bold uppercase">Our Song (Search YouTube)</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="songSearchInput" placeholder="e.g. Perfect - Ed Sheeran" 
-                            class="w-full p-4 rounded-xl border border-pink-200 outline-none transition-colors text-sm">
-                        <button id="songSearchBtn" class="bg-pink-400 hover:bg-brand-pink text-white p-4 rounded-xl transition-colors">
-                            <i data-lucide="search" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    
-                    <div id="searchResults" class="hidden flex-col gap-2 mt-2"></div>
-                    
-                    <div id="selectedSongPreview" class="hidden bg-pink-50 border border-pink-200 p-3 rounded-xl flex items-center justify-between mt-2">
-                        <span id="selectedSongTitle" class="text-xs font-bold truncate text-pink-600">Selected Song</span>
-                        <button id="clearSongBtn" class="text-gray-400 hover:text-pink-600"><i data-lucide="x" class="w-4 h-4"></i></button>
-                    </div>
-
-                    <div class="mt-2 text-right">
-                        <button id="manualEntryToggle" class="text-[10px] text-pink-400 underline hover:text-pink-600">
-                            Can't find it? Paste link instead
-                        </button>
-                    </div>
-                    
-                    <input type="text" id="manualYoutubeInput" placeholder="Paste YouTube Link" 
-                        class="hidden w-full p-4 mt-2 rounded-xl border border-pink-200 outline-none transition-colors text-sm">
-
-                    <input type="hidden" id="selectedVideoId">
-                </div>
-
                 <button id="createBtn" class="submit-btn">
                     <span>Send With Love 💌</span>
                 </button>
@@ -498,17 +383,17 @@
     </div>
 
     <!-- Hidden Certificate Template for PDF Generation -->
-    <div id="certificateTemplate" class="bg-white text-gray-800 p-12 border-[20px] border-double border-yellow-400 flex flex-col items-center justify-center text-center relative hidden shadow-2xl rounded-sm">
-        <h1 class="text-5xl font-serif mb-6 text-pink-500" style="font-family: 'Georgia', serif;">Certificate of Love</h1>
+    <div id="certificateTemplate" class="bg-white text-gray-800 p-12 border-[20px] border-double flex flex-col items-center justify-center text-center relative hidden shadow-2xl rounded-sm cert-container" style="width: 800px; height: 600px;">
+        <h1 class="text-5xl font-serif mb-6 cert-title" style="font-family: 'Georgia', serif;">Certificate of Love</h1>
         <p class="text-xl mb-10 italic">This certifies that the bond between</p>
         
         <div class="flex items-center gap-6 mb-10">
-            <span id="certName1" class="text-4xl font-serif border-b-2 border-pink-200 pb-2 px-4">Partner 1</span>
-            <span class="text-3xl text-pink-300">&</span>
-            <span id="certName2" class="text-4xl font-serif border-b-2 border-pink-200 pb-2 px-4">Partner 2</span>
+            <span id="certName1" class="text-4xl font-serif border-b-2 cert-border pb-2 px-4">Partner 1</span>
+            <span class="text-3xl cert-text">&</span>
+            <span id="certName2" class="text-4xl font-serif border-b-2 cert-border pb-2 px-4">Partner 2</span>
         </div>
 
-        <p class="text-xl mb-16">Has reached <span class="text-pink-500 font-bold">100% Charge</span> on BloomTogether</p>
+        <p class="text-xl mb-16">Has reached <span class="cert-highlight font-bold">100% Charge</span> on BloomTogether</p>
         
         <div class="w-full flex justify-between mt-auto px-20">
             <div class="text-center">
@@ -516,10 +401,10 @@
                 <p class="text-xs text-gray-400 uppercase tracking-widest">Date of Connection</p>
             </div>
             <div class="text-center">
-                <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center border-2 border-yellow-200 mb-2">
-                    <i data-lucide="heart" class="w-8 h-8 text-yellow-400 fill-yellow-400"></i>
+                <div class="w-24 h-24 rounded-full flex items-center justify-center border-4 mb-2 cert-seal-container">
+                    <i data-lucide="heart" class="w-12 h-12 cert-seal-icon"></i>
                 </div>
-                <p class="text-[10px] font-bold text-yellow-600 uppercase">Official Gold Seal</p>
+                <p class="text-xs font-bold uppercase cert-seal-text">Official Seal</p>
             </div>
         </div>
     </div>
