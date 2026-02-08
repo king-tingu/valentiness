@@ -33,258 +33,506 @@
         }
     </script>
     <style>
-        body { background-color: #121212; color: white; overflow-x: hidden; touch-action: manipulation; }
-        canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 50; }
-        .gold-theme .text-brand-pink { color: #FFD700 !important; }
-        .gold-theme .bg-brand-pink { background-color: #FFD700 !important; }
-        .gold-theme .border-brand-pink { border-color: #FFD700 !important; }
-        .gold-glow { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
-        .certificate-container { 
-            width: 800px; 
-            height: 600px; 
-            display: none; /* Hidden by default, shown for PDF generation */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #ffecd2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+            color: #333;
+        }
+
+        /* Floating hearts animation */
+        .heart-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            color: rgba(255, 105, 135, 0.3);
+            animation: float-up 15s infinite;
+            opacity: 0;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 50px 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(255, 105, 135, 0.3);
+            position: relative;
+            z-index: 10;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .heart-icon {
+            font-size: 60px;
+            animation: heartbeat 1.5s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% {
+                transform: scale(1);
+            }
+            10%, 30% {
+                transform: scale(1.1);
+            }
+            20%, 40% {
+                transform: scale(1);
+            }
+        }
+
+        h1.title {
+            color: #d63447;
+            font-size: 2.5em;
+            margin: 20px 0 10px;
+            font-weight: normal;
+            animation: fadeIn 1s ease-in 0.3s both;
+        }
+
+        .subtitle {
+            color: #ff6b9d;
+            font-size: 1.1em;
+            font-style: italic;
+            animation: fadeIn 1s ease-in 0.5s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            animation: fadeIn 1s ease-in both;
+        }
+
+        .form-group:nth-child(1) { animation-delay: 0.6s; }
+        .form-group:nth-child(2) { animation-delay: 0.7s; }
+        .form-group:nth-child(3) { animation-delay: 0.8s; }
+
+        label {
+            display: block;
+            color: #d63447;
+            font-size: 1em;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #ffc2d1;
+            border-radius: 15px;
+            font-size: 1em;
+            font-family: 'Georgia', serif;
+            transition: all 0.3s ease;
+            background: rgba(255, 240, 245, 0.5);
+            color: #333;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #ff6b9d;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 105, 135, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ff6b9d 0%, #d63447 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 1s ease-in 0.9s both;
+        }
+
+        .submit-btn:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .submit-btn:hover:before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(214, 52, 71, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .submit-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sparkle effect */
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sparkle 1s ease-out forwards;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Override existing styles for consistency */
+        #app { max-width: none; }
+        canvas#particleCanvas { display: none; } /* Hide the old particle canvas for the landing */
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 30px;
+            }
+
+            h1.title {
+                font-size: 2em;
+            }
+
+            .heart-icon {
+                font-size: 50px;
+            }
+        }
+
+        /* Gold Theme Overrides */
+        .gold-theme {
+            background: linear-gradient(135deg, #fceabb 0%, #f8b500 100%);
+        }
+        .gold-theme .container {
+            border: 4px solid #f8b500;
+            box-shadow: 0 20px 60px rgba(248, 181, 0, 0.3);
+        }
+        .gold-theme .title { color: #b8860b; }
+        .gold-theme .subtitle { color: #daa520; }
+        .gold-theme .submit-btn {
+            background: linear-gradient(135deg, #f8b500 0%, #b8860b 100%);
+        }
+        .gold-theme .text-pink-500 { color: #daa520 !important; }
+        .gold-theme .text-pink-600 { color: #b8860b !important; }
+        .gold-theme .bg-pink-50 { background-color: #fffaf0 !important; }
+        .gold-theme .border-pink-100, .gold-theme .border-pink-200 { border-color: #fceabb !important; }
+        .gold-theme .heart { color: rgba(218, 165, 32, 0.4); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center font-sans">
-    <canvas id="particleCanvas"></canvas>
+    <!-- Floating hearts background -->
+    <div class="heart-bg" id="heartBg"></div>
 
     <!-- App Container -->
-    <div id="app" class="w-full max-w-md px-6 py-8 flex flex-col items-center relative z-10">
+    <div id="app" class="w-full flex flex-col items-center relative z-10">
         
-        <!-- Header -->
-        <header class="w-full flex justify-between items-center mb-8">
-            <div class="flex items-center gap-2">
-                <i data-lucide="heart" class="text-brand-pink w-6 h-6 fill-current"></i>
-                <h1 class="text-xl font-bold tracking-wider">BloomTogether</h1>
-            </div>
-            <div id="statusIndicator" class="w-3 h-3 rounded-full bg-red-500 transition-colors"></div>
-        </header>
-
         <!-- Room Setup / Landing Flow -->
-        <div id="setupFlow" class="w-full relative">
+        <div id="setupFlow" class="w-full flex justify-center">
             
             <!-- 1. Creator Form (Initial View for Sender) -->
-            <div id="creatorPanel" class="w-full space-y-4 animate-fade-in">
-                <h2 class="text-2xl font-bold text-center mb-6">Create a Valentine</h2>
-                <p class="text-gray-400 text-center text-sm mb-4">Send a special interactive heart to your valentine.</p>
+            <div id="creatorPanel" class="container animate-fade-in hidden">
+                <div class="header-section">
+                    <div class="heart-icon">💖</div>
+                    <h1 class="title">Send a Valentine</h1>
+                    <p class="subtitle">Share love, spread joy ✨</p>
+                </div>
                 
-                <div class="space-y-3">
-                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">To (Valentine)</label>
-                    <input type="text" id="valentineNameInput" placeholder="e.g. Juliet" 
-                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg">
+                <div class="form-group">
+                    <label for="valentineNameInput">To:</label>
+                    <input type="text" id="valentineNameInput" placeholder="Your special someone..." required>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">From (You)</label>
-                    <input type="text" id="senderNameInput" placeholder="e.g. Romeo" 
-                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg">
+                <div class="form-group">
+                    <label for="senderNameInput">From:</label>
+                    <input type="text" id="senderNameInput" placeholder="Your name..." required>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">Secret Message</label>
-                    <textarea id="secretMessageInput" placeholder="Will be revealed at 100% charge..." rows="3"
-                        class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-lg resize-none"></textarea>
+                <div class="form-group">
+                    <label for="secretMessageInput">Your Message:</label>
+                    <textarea id="secretMessageInput" placeholder="Write your heartfelt message here..." required></textarea>
                 </div>
 
-                <div class="space-y-3">
-                    <label class="text-xs text-brand-pink font-bold ml-1 uppercase">Our Song (Search YouTube)</label>
+                <!-- Music Search (Retained but styled) -->
+                <div class="form-group">
+                    <label class="text-xs text-brand-pink font-bold uppercase">Our Song (Search YouTube)</label>
                     <div class="flex gap-2">
                         <input type="text" id="songSearchInput" placeholder="e.g. Perfect - Ed Sheeran" 
-                            class="w-full p-4 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-sm">
-                        <button id="songSearchBtn" class="bg-gray-700 hover:bg-brand-pink text-white p-4 rounded-xl transition-colors">
+                            class="w-full p-4 rounded-xl border border-pink-200 outline-none transition-colors text-sm">
+                        <button id="songSearchBtn" class="bg-pink-400 hover:bg-brand-pink text-white p-4 rounded-xl transition-colors">
                             <i data-lucide="search" class="w-5 h-5"></i>
                         </button>
                     </div>
                     
-                    <!-- Search Results -->
-                    <div id="searchResults" class="hidden flex-col gap-2 mt-2">
-                        <!-- Items injected by JS -->
-                    </div>
+                    <div id="searchResults" class="hidden flex-col gap-2 mt-2"></div>
                     
-                    <!-- Selected Song Preview -->
-                    <div id="selectedSongPreview" class="hidden bg-brand-pink/20 border border-brand-pink p-3 rounded-xl flex items-center justify-between">
-                        <span id="selectedSongTitle" class="text-xs font-bold truncate">Selected Song</span>
-                        <button id="clearSongBtn" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    <div id="selectedSongPreview" class="hidden bg-pink-50 border border-pink-200 p-3 rounded-xl flex items-center justify-between mt-2">
+                        <span id="selectedSongTitle" class="text-xs font-bold truncate text-pink-600">Selected Song</span>
+                        <button id="clearSongBtn" class="text-gray-400 hover:text-pink-600"><i data-lucide="x" class="w-4 h-4"></i></button>
                     </div>
 
-                    <!-- Manual Fallback -->
                     <div class="mt-2 text-right">
-                        <button id="manualEntryToggle" class="text-[10px] text-gray-400 underline hover:text-white">
+                        <button id="manualEntryToggle" class="text-[10px] text-pink-400 underline hover:text-pink-600">
                             Can't find it? Paste link instead
                         </button>
                     </div>
                     
-                    <input type="text" id="manualYoutubeInput" placeholder="Paste YouTube Link (e.g. https://youtu.be/...)" 
-                        class="hidden w-full p-4 mt-2 rounded-xl bg-brand-gray border border-gray-700 focus:border-brand-pink outline-none transition-colors text-sm">
+                    <input type="text" id="manualYoutubeInput" placeholder="Paste YouTube Link" 
+                        class="hidden w-full p-4 mt-2 rounded-xl border border-pink-200 outline-none transition-colors text-sm">
 
                     <input type="hidden" id="selectedVideoId">
                 </div>
 
-                <button id="createBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95 mt-4">
-                    Create Link
+                <button id="createBtn" class="submit-btn">
+                    <span>Send With Love 💌</span>
                 </button>
             </div>
 
-            <!-- 2. Share Link Panel (Hidden) -->
-            <div id="sharePanel" class="hidden w-full space-y-6 text-center animate-fade-in">
-                <div class="bg-gray-800 p-6 rounded-2xl border border-dashed border-gray-600">
-                    <i data-lucide="link" class="w-12 h-12 text-brand-pink mx-auto mb-4"></i>
-                    <h3 class="text-xl font-bold mb-2">Link Ready!</h3>
-                    <p class="text-sm text-gray-400 mb-4">Share this with your Valentine first, then join the room.</p>
-                    
-                    <div class="flex items-center gap-2 bg-black p-2 rounded-lg mb-4">
-                        <input type="text" id="shareLinkInput" readonly class="w-full bg-transparent text-sm text-gray-300 outline-none p-1">
-                        <button id="copyBtn" class="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
-                            <i data-lucide="copy" class="w-4 h-4 text-white"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <button id="joinAsSenderBtn" class="w-full border-2 border-brand-pink text-brand-pink font-bold p-4 rounded-xl hover:bg-brand-pink hover:text-white transition-colors">
-                    Enter Room & Wait
-                </button>
-            </div>
-
-            <!-- 3. Receiver Landing (Hidden) -->
-            <div id="receiverPanel" class="hidden w-full text-center space-y-6 animate-fade-in">
-                <div class="mb-8 relative">
-                    <div class="absolute inset-0 bg-brand-pink blur-3xl opacity-20 rounded-full"></div>
-                    <i data-lucide="heart-handshake" class="w-24 h-24 text-brand-pink mx-auto relative z-10 animate-bounce"></i>
+            <!-- 2. Share Link Panel -->
+            <div id="sharePanel" class="hidden container text-center animate-fade-in">
+                <div class="header-section">
+                    <div class="heart-icon">🔗</div>
+                    <h3 class="title text-2xl">Link Ready!</h3>
+                    <p class="subtitle">Share this with your Valentine first ✨</p>
                 </div>
                 
-                <div>
-                    <h2 class="text-3xl font-bold mb-2">Happy Valentine's, <span id="recvValentineName" class="text-brand-pink"></span>!</h2>
-                    <p class="text-xl text-gray-300">From <span id="recvSenderName" class="font-bold text-white"></span></p>
+                <div class="bg-pink-50 p-6 rounded-2xl border-2 border-dashed border-pink-200 mb-6">
+                    <div class="flex items-center gap-2 bg-white p-3 rounded-xl border border-pink-100 mb-4 shadow-inner">
+                        <input type="text" id="shareLinkInput" readonly class="w-full bg-transparent text-sm text-pink-600 outline-none p-1 border-none font-sans">
+                        <button id="copyBtn" class="p-2 bg-pink-100 rounded-md hover:bg-pink-200 transition-colors">
+                            <i data-lucide="copy" class="w-4 h-4 text-pink-600"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-pink-400">Your valentine is waiting for this special link...</p>
                 </div>
 
-                <div class="bg-gray-800/50 p-4 rounded-xl text-sm text-gray-400">
-                    <p>Tap the heart together to charge up the battery and reveal your secret message!</p>
+                <button id="joinAsSenderBtn" class="submit-btn">
+                    <span>Enter Room & Wait 💖</span>
+                </button>
+            </div>
+
+            <!-- 3. Receiver Landing -->
+            <div id="receiverPanel" class="hidden container text-center animate-fade-in">
+                <div class="header-section">
+                    <div class="heart-icon">🎁</div>
+                    <h2 class="title text-3xl">Happy Valentine's, <span id="recvValentineName" class="text-pink-500"></span>!</h2>
+                    <p class="subtitle">From <span id="recvSenderName" class="font-bold"></span></p>
+                </div>
+                
+                <div class="bg-pink-50 p-6 rounded-2xl border border-pink-100 mb-8">
+                    <p class="text-pink-600 italic">"You've received a special interactive gift. Tap the heart together to reveal a secret message!"</p>
                 </div>
 
-                <button id="receiverJoinBtn" class="w-full bg-brand-pink text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95 text-lg">
-                    Open Your Gift
+                <button id="receiverJoinBtn" class="submit-btn">
+                    <span>Open Your Gift 💌</span>
                 </button>
             </div>
 
         </div>
 
-        <!-- Main Interaction Area (Hidden until joined) -->
-        <div id="gameArea" class="hidden w-full flex-col items-center relative">
+        <!-- Main Interaction Area -->
+        <div id="gameArea" class="hidden container flex-col items-center relative animate-fade-in">
             
             <!-- Love Leaderboard -->
-            <div id="scoreboard" class="absolute top-0 w-full flex justify-between px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-widest z-10">
+            <div id="scoreboard" class="w-full flex justify-between mb-8 pb-4 border-b border-pink-100">
                 <div class="flex flex-col items-start">
-                    <span id="scoreName1" class="text-brand-pink">You</span>
-                    <span id="scoreValue1" class="text-2xl text-white font-sans">0</span>
+                    <span id="scoreName1" class="text-xs font-bold text-pink-400 uppercase">You</span>
+                    <span id="scoreValue1" class="text-3xl text-pink-600 font-serif">0</span>
                 </div>
                 <div class="flex flex-col items-end">
-                    <span id="scoreName2" class="text-brand-pink">Partner</span>
-                    <span id="scoreValue2" class="text-2xl text-white font-sans">0</span>
+                    <span id="scoreName2" class="text-xs font-bold text-pink-400 uppercase">Partner</span>
+                    <span id="scoreValue2" class="text-3xl text-pink-600 font-serif">0</span>
                 </div>
             </div>
 
             <!-- Realistic Glass Jar Container -->
-            <div id="jarContainer" class="w-48 h-64 relative mb-8 flex flex-col justify-end items-center group mt-16">
+            <div id="jarContainer" class="w-48 h-64 relative mb-12 flex flex-col justify-end items-center group">
                 <!-- Glass Reflection & Shape -->
-                <div class="absolute inset-0 rounded-b-[3rem] rounded-t-[1rem] border-[3px] border-white/40 bg-white/5 backdrop-blur-sm shadow-[0_8px_32px_0_rgba(255,20,147,0.3)] overflow-hidden z-20 pointer-events-none">
+                <div class="absolute inset-0 rounded-b-[3rem] rounded-t-[1rem] border-[4px] border-white/80 bg-white/20 backdrop-blur-md shadow-[0_8px_32px_0_rgba(255,105,135,0.2)] overflow-hidden z-20 pointer-events-none">
                     <!-- Shine -->
-                    <div class="absolute top-0 left-2 w-4 h-full bg-gradient-to-b from-white/30 to-transparent rounded-full blur-[2px]"></div>
-                    <div class="absolute top-2 right-4 w-2 h-16 bg-white/20 rounded-full blur-[1px]"></div>
+                    <div class="absolute top-0 left-2 w-4 h-full bg-gradient-to-b from-white/40 to-transparent rounded-full blur-[2px]"></div>
+                    <div class="absolute top-2 right-4 w-2 h-16 bg-white/30 rounded-full blur-[1px]"></div>
                 </div>
 
                 <!-- Jar Rim/Lid Area -->
-                <div class="absolute -top-1 w-52 h-6 border-[3px] border-white/30 bg-white/10 rounded-full z-30 shadow-sm backdrop-blur-md"></div>
+                <div class="absolute -top-2 w-52 h-8 border-[4px] border-white/80 bg-white/40 rounded-full z-30 shadow-sm backdrop-blur-md"></div>
 
                 <!-- Heart Liquid (Filling) -->
-                <div id="jarLevel" class="w-[96%] rounded-b-[2.5rem] bg-gradient-to-t from-[#FF1493] via-[#FF69B4] to-[#FFB6C1] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative z-10 flex items-end justify-center overflow-hidden" style="height: 0%; max-height: 98%; bottom: 4px;">
+                <div id="jarLevel" class="w-[94%] rounded-b-[2.5rem] bg-gradient-to-t from-[#ff6b9d] via-[#ff9a9e] to-[#fad0c4] transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative z-10 flex items-end justify-center overflow-hidden" style="height: 0%; max-height: 98%; bottom: 4px;">
                     <!-- Surface Tension / Liquid Top -->
-                    <div class="w-full h-3 bg-white/30 absolute top-0 blur-[1px]"></div>
-                    
-                    <!-- Floating Particles inside liquid -->
-                    <div class="absolute inset-0 w-full h-full">
-                        <div class="absolute bottom-4 left-4 text-xs animate-[bounce_3s_infinite]">❤️</div>
-                        <div class="absolute bottom-10 right-8 text-xs animate-[bounce_4s_infinite_0.5s]">💕</div>
-                        <div class="absolute bottom-20 left-10 text-xs animate-[bounce_5s_infinite_1s]">✨</div>
-                    </div>
+                    <div class="w-full h-4 bg-white/40 absolute top-0 blur-[2px]"></div>
                 </div>
 
                 <!-- Charge Text -->
-                <span id="chargeText" class="absolute inset-0 flex items-center justify-center font-bold text-3xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-40 font-serif">0%</span>
+                <span id="chargeText" class="absolute inset-0 flex items-center justify-center font-bold text-4xl text-white drop-shadow-[0_2px_4px_rgba(214,52,71,0.3)] z-40 font-serif">0%</span>
                 
                 <!-- Floating Icon -->
-                <i data-lucide="sparkles" class="absolute -top-12 text-brand-gold w-10 h-10 animate-pulse hidden" id="chargingIcon"></i>
+                <i data-lucide="sparkles" class="absolute -top-16 text-yellow-400 w-12 h-12 animate-pulse hidden" id="chargingIcon"></i>
                 
-                <!-- Warning Toast (For Solo Tapping) -->
-                <div id="soloWarning" class="absolute -bottom-16 w-60 bg-red-500/90 text-white text-xs p-2 rounded-lg text-center hidden animate-bounce z-50 shadow-lg border border-red-400">
-                    Wait for your partner! ❤️<br>Take turns filling the jar.
+                <!-- Warning Toast -->
+                <div id="soloWarning" class="absolute -bottom-20 w-64 bg-pink-500/90 text-white text-xs p-3 rounded-xl text-center hidden animate-bounce z-50 shadow-xl border border-pink-400">
+                    Wait for your partner! ❤️<br>Take turns filling the jar together.
                 </div>
             </div>
 
             <!-- Tap Button -->
-            <button id="tapBtn" class="w-32 h-32 rounded-full bg-brand-gray border-4 border-brand-pink flex items-center justify-center shadow-[0_0_30px_rgba(255,20,147,0.3)] hover:scale-105 active:scale-90 transition-all cursor-pointer select-none">
-                <i data-lucide="fingerprint" class="w-16 h-16 text-brand-pink"></i>
+            <button id="tapBtn" class="w-32 h-32 rounded-full bg-white border-4 border-pink-400 flex items-center justify-center shadow-[0_10px_30px_rgba(255,105,135,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer select-none group">
+                <i data-lucide="heart" class="w-16 h-16 text-pink-500 fill-pink-50 group-hover:fill-pink-200 transition-colors"></i>
             </button>
-            <p class="mt-4 text-gray-400 text-sm animate-pulse">Tap repeatedly to charge love!</p>
+            <p class="mt-6 text-pink-400 text-sm animate-pulse font-medium">Tap together to charge love!</p>
 
-            <!-- Revealed Message (Hidden until 100%) -->
-            <div id="messageReveal" class="hidden w-full p-6 bg-brand-gray rounded-2xl border border-brand-pink mt-8 text-center animate-fade-in">
-                <h3 class="text-brand-pink font-bold text-lg mb-2">Message from Partner</h3>
-                <p id="finalMessage" class="text-xl italic">"Loading..."</p>
+            <!-- Revealed Message -->
+            <div id="messageReveal" class="hidden w-full p-8 bg-pink-50 rounded-3xl border-2 border-pink-200 mt-8 text-center animate-fade-in shadow-inner">
+                <h3 class="text-pink-500 font-bold text-lg mb-4 uppercase tracking-widest">A Heartfelt Message</h3>
+                <p id="finalMessage" class="text-2xl italic font-serif text-pink-700 leading-relaxed">"Loading..."</p>
                 
-                <!-- Certificate Download (Premium Only) -->
-                <button id="downloadCertBtn" class="hidden mt-6 w-full bg-brand-gold text-brand-dark font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                    <i data-lucide="download"></i> Download Love Certificate
+                <!-- Certificate Download -->
+                <button id="downloadCertBtn" class="hidden mt-8 w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all">
+                    <i data-lucide="award"></i> Download Love Certificate
                 </button>
             </div>
 
-            <!-- Premium Upgrade Section -->
-            <div id="premiumSection" class="mt-12 w-full pt-8 border-t border-gray-800">
-                <div id="adBanner" class="bg-gray-800 p-4 rounded-lg mb-4 text-center text-xs text-gray-400">
-                    [Ad] Create your own free room today!
+            <!-- Premium Upgrade -->
+            <div id="premiumSection" class="mt-12 w-full pt-8 border-t border-pink-100">
+                <div id="adBanner" class="bg-pink-50 p-4 rounded-xl mb-6 text-center text-xs text-pink-400 italic">
+                    ✨ Create your own magical valentine today! ✨
                 </div>
                 
-                <button id="premiumBtn" class="w-full border border-brand-gold text-brand-gold p-3 rounded-xl hover:bg-brand-gold hover:text-black transition-colors flex items-center justify-center gap-2">
-                    <i data-lucide="crown"></i> Unlock Premium (Gold Theme)
+                <button id="premiumBtn" class="w-full border-2 border-yellow-400 text-yellow-600 p-4 rounded-xl hover:bg-yellow-400 hover:text-white transition-all flex items-center justify-center gap-3 font-bold">
+                    <i data-lucide="crown"></i> Unlock Golden Theme & Certificate
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Hidden Certificate Template for PDF Generation -->
-    <div id="certificateTemplate" class="bg-white text-black p-10 border-[20px] border-double border-[#FFD700] flex flex-col items-center justify-center text-center relative hidden">
-        <h1 class="text-5xl font-serif mb-4 text-[#FF1493]" style="font-family: 'Times New Roman', serif;">Certificate of Love</h1>
-        <p class="text-xl mb-8">This certifies that the bond between</p>
+    <div id="certificateTemplate" class="bg-white text-gray-800 p-12 border-[20px] border-double border-yellow-400 flex flex-col items-center justify-center text-center relative hidden shadow-2xl rounded-sm">
+        <h1 class="text-5xl font-serif mb-6 text-pink-500" style="font-family: 'Georgia', serif;">Certificate of Love</h1>
+        <p class="text-xl mb-10 italic">This certifies that the bond between</p>
         
-        <div class="flex items-center gap-4 mb-8">
-            <span id="certName1" class="text-3xl font-bold border-b-2 border-black pb-1">Partner 1</span>
-            <span class="text-2xl">&</span>
-            <span id="certName2" class="text-3xl font-bold border-b-2 border-black pb-1">Partner 2</span>
+        <div class="flex items-center gap-6 mb-10">
+            <span id="certName1" class="text-4xl font-serif border-b-2 border-pink-200 pb-2 px-4">Partner 1</span>
+            <span class="text-3xl text-pink-300">&</span>
+            <span id="certName2" class="text-4xl font-serif border-b-2 border-pink-200 pb-2 px-4">Partner 2</span>
         </div>
 
-        <p class="text-xl mb-12">Has reached 100% Charge on BloomTogether</p>
+        <p class="text-xl mb-16">Has reached <span class="text-pink-500 font-bold">100% Charge</span> on BloomTogether</p>
         
         <div class="w-full flex justify-between mt-auto px-20">
             <div class="text-center">
-                <div class="w-40 border-b border-black mb-2"></div>
-                <p class="text-sm text-gray-600">Date</p>
+                <div class="w-48 border-b border-gray-300 mb-2"></div>
+                <p class="text-xs text-gray-400 uppercase tracking-widest">Date of Connection</p>
             </div>
             <div class="text-center">
-                <i data-lucide="heart" class="w-12 h-12 text-[#FFD700] fill-current mx-auto mb-2"></i>
-                <p class="text-sm font-bold text-[#FFD700]">OFFICIAL GOLD SEAL</p>
+                <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center border-2 border-yellow-200 mb-2">
+                    <i data-lucide="heart" class="w-8 h-8 text-yellow-400 fill-yellow-400"></i>
+                </div>
+                <p class="text-[10px] font-bold text-yellow-600 uppercase">Official Gold Seal</p>
             </div>
         </div>
     </div>
 
     <!-- Music Player (Floating) -->
-    <div id="musicControls" class="hidden fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div id="musicControls" class="hidden fixed bottom-8 right-8 z-50 flex flex-col items-end gap-3">
         <!-- Hidden Iframe -->
-        <div id="ytPlayerContainer" class="hidden w-64 h-36 rounded-xl overflow-hidden shadow-2xl border-2 border-brand-pink bg-black">
+        <div id="ytPlayerContainer" class="hidden w-72 h-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-pink-200 bg-white">
             <iframe id="ytPlayer" width="100%" height="100%" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
         <!-- Toggle Button -->
-        <button id="musicToggleBtn" class="w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-brand-pink shadow-lg hover:bg-white/20 transition-all animate-bounce-slow">
-            <i data-lucide="music" class="w-6 h-6"></i>
+        <button id="musicToggleBtn" class="w-14 h-14 bg-white/80 backdrop-blur-md border border-pink-100 rounded-full flex items-center justify-center text-pink-500 shadow-xl hover:bg-white hover:scale-110 transition-all">
+            <i data-lucide="music" class="w-7 h-7"></i>
         </button>
     </div>
 

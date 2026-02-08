@@ -348,11 +348,47 @@ els.receiverJoinBtn.addEventListener('click', () => {
     enterGame();
 });
 
+function showRejoinPrompt(roomId, name) {
+    // Create a simple, themed rejoin prompt
+    const rejoinOverlay = document.createElement('div');
+    rejoinOverlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-pink-100/80 backdrop-blur-sm p-6';
+    rejoinOverlay.innerHTML = `
+        <div class="container text-center animate-fade-in">
+            <div class="header-section">
+                <div class="heart-icon">👋</div>
+                <h2 class="title text-2xl">Welcome Back, ${name}!</h2>
+                <p class="subtitle text-sm">Would you like to rejoin your previous room?</p>
+            </div>
+            <div class="flex flex-col gap-3">
+                <button id="rejoinYes" class="submit-btn"><span>Yes, Take Me There! 💖</span></button>
+                <button id="rejoinNo" class="text-pink-400 underline text-sm mt-2">No, start a new one</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(rejoinOverlay);
+
+    document.getElementById('rejoinYes').onclick = () => {
+        state.roomId = roomId;
+        state.myName = name;
+        state.isSender = true;
+        rejoinOverlay.remove();
+        enterGame();
+    };
+
+    document.getElementById('rejoinNo').onclick = () => {
+        localStorage.removeItem('bloom_room_id');
+        localStorage.removeItem('bloom_my_name');
+        state.isSender = true;
+        rejoinOverlay.remove();
+        els.creatorPanel.classList.remove('hidden');
+    };
+}
+
 function enterGame() {
     els.setupFlow.classList.add('hidden');
     els.gameArea.classList.remove('hidden');
     els.gameArea.classList.add('flex');
-    els.statusIndicator.classList.replace('bg-red-500', 'bg-yellow-500');
+    if (els.statusIndicator) els.statusIndicator.classList.replace('bg-red-500', 'bg-yellow-500');
 
     setupRealtime();
 }
@@ -406,7 +442,7 @@ function setupRealtime() {
         .on('presence', { event: 'sync' }, () => updatePresence()) // Listen for joins/leaves
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-                els.statusIndicator.classList.replace('bg-yellow-500', 'bg-green-500');
+                if (els.statusIndicator) els.statusIndicator.classList.replace('bg-yellow-500', 'bg-green-500');
                 // Track my presence in the room
                 await state.channel.track({ user: state.myName, online_at: new Date().toISOString() });
                 
@@ -428,8 +464,8 @@ function setupRealtime() {
 
 function showGoldenButton() {
     state.isGoldenMoment = true;
-    els.tapBtn.classList.add('bg-brand-gold', 'animate-pulse', 'border-yellow-200');
-    els.tapBtn.innerHTML = `<i data-lucide="star" class="w-16 h-16 text-black fill-current animate-spin"></i>`;
+    els.tapBtn.classList.add('bg-yellow-400', 'animate-pulse', 'border-yellow-200');
+    els.tapBtn.innerHTML = `<i data-lucide="star" class="w-16 h-16 text-white fill-current animate-spin"></i>`;
     lucide.createIcons();
 
     // Reset after 3 seconds if missed
@@ -440,8 +476,8 @@ function showGoldenButton() {
 
 function resetGoldenButton() {
     state.isGoldenMoment = false;
-    els.tapBtn.classList.remove('bg-brand-gold', 'animate-pulse', 'border-yellow-200');
-    els.tapBtn.innerHTML = `<i data-lucide="fingerprint" class="w-16 h-16 text-brand-pink"></i>`;
+    els.tapBtn.classList.remove('bg-yellow-400', 'animate-pulse', 'border-yellow-200');
+    els.tapBtn.innerHTML = `<i data-lucide="heart" class="w-16 h-16 text-pink-500 fill-pink-50"></i>`;
     lucide.createIcons();
 }
 
@@ -461,8 +497,8 @@ function updatePresence() {
         
         if (infoText) {
             infoText.textContent = "Partner Connected! Tap the heart together!";
-            infoText.classList.add('text-brand-pink');
-            infoText.classList.remove('text-gray-400');
+            infoText.classList.add('text-pink-500');
+            infoText.classList.remove('text-pink-300');
         }
     } else {
         // Disable Game
@@ -472,18 +508,61 @@ function updatePresence() {
         
         if (infoText) {
             infoText.textContent = "Waiting for partner to join...";
-            infoText.classList.remove('text-brand-pink');
-            infoText.classList.add('text-gray-400');
+            infoText.classList.remove('text-pink-500');
+            infoText.classList.add('text-pink-300');
         }
     }
 }
 
 
-// Reuse Particle Logic
+// --- Visual Effects (Floating Hearts & Sparkles) ---
+function createHeart() {
+    const heartBg = document.getElementById('heartBg');
+    if (!heartBg) return;
+    const heart = document.createElement('div');
+    heart.className = 'heart';
+    heart.innerHTML = '❤️';
+    heart.style.left = Math.random() * 100 + '%';
+    heart.style.animationDuration = (Math.random() * 10 + 10) + 's';
+    heart.style.animationDelay = Math.random() * 5 + 's';
+    heartBg.appendChild(heart);
+    setTimeout(() => heart.remove(), 20000);
+}
+
+// Sparkle effect for buttons
+function addSparkle(e, btn) {
+    const rect = btn.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const sparkle = document.createElement('div');
+    sparkle.className = 'sparkle';
+    sparkle.style.left = x + 'px';
+    sparkle.style.top = y + 'px';
+    sparkle.style.setProperty('--tx', (Math.random() - 0.5) * 100 + 'px');
+    sparkle.style.setProperty('--ty', (Math.random() - 0.5) * 100 + 'px');
+    btn.appendChild(sparkle);
+    setTimeout(() => sparkle.remove(), 1000);
+}
+
+// Initialize Visuals
+for (let i = 0; i < 15; i++) setTimeout(createHeart, i * 500);
+setInterval(createHeart, 2000);
+
+// Add sparkle to main buttons
+[els.createBtn, els.joinAsSenderBtn, els.receiverJoinBtn].forEach(btn => {
+    if (btn) btn.addEventListener('mousemove', (e) => addSparkle(e, btn));
+});
+
+// Reuse Particle Logic (Updated for Light Theme)
 const canvas = document.getElementById('particleCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
 let particles = [];
-function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resizeCanvas() { 
+    if (canvas) {
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+    }
+}
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
@@ -493,12 +572,13 @@ class Particle {
         this.size = Math.random() * 20 + 10;
         this.speedX = Math.random() * 4 - 2;
         this.speedY = Math.random() * -3 - 3;
-        this.color = isGold ? '#FFD700' : '#FF1493';
+        this.color = isGold ? '#FFD700' : '#ff6b9d'; // Updated pink
         this.life = 1.0; this.decay = Math.random() * 0.02 + 0.01;
         this.shape = Math.random() > 0.5 ? 'heart' : 'circle';
     }
     update() { this.x += this.speedX; this.y += this.speedY; this.life -= this.decay; this.size *= 0.95; }
     draw() {
+        if (!ctx) return;
         ctx.fillStyle = this.color; ctx.globalAlpha = this.life; ctx.beginPath();
         if (this.shape === 'heart') {
             const h = this.size * 0.3;
@@ -513,6 +593,7 @@ class Particle {
 }
 
 function animateParticles() {
+    if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let i = 0; i < particles.length; i++) {
         particles[i].update(); particles[i].draw();
@@ -520,7 +601,7 @@ function animateParticles() {
     }
     requestAnimationFrame(animateParticles);
 }
-animateParticles();
+if (ctx) animateParticles();
 
 function emitParticles(amount = 5) {
     const centerX = window.innerWidth / 2;
@@ -644,11 +725,11 @@ function updateScoreboard() {
     els.scoreValue2.textContent = state.scores.partner;
     // Highlight leader
     if (state.scores.me > state.scores.partner) {
-        els.scoreValue1.classList.add('text-brand-gold');
-        els.scoreValue2.classList.remove('text-brand-gold');
+        els.scoreValue1.classList.add('text-yellow-600');
+        els.scoreValue2.classList.remove('text-yellow-600');
     } else if (state.scores.partner > state.scores.me) {
-        els.scoreValue2.classList.add('text-brand-gold');
-        els.scoreValue1.classList.remove('text-brand-gold');
+        els.scoreValue2.classList.add('text-yellow-600');
+        els.scoreValue1.classList.remove('text-yellow-600');
     }
 }
 
@@ -685,13 +766,13 @@ function revealMessage() {
     // Display the message based on who is viewing
     if (state.isSender) {
         els.finalMessage.innerHTML = `
-            <span class="block text-sm text-gray-400 mb-2">You sent:</span>
-            <span class="text-2xl font-serif text-brand-pink">"${state.targetMessage.replace('Your message will be revealed to ' + state.partnerName, '...')}"</span>
-            <span class="block text-sm text-green-400 mt-4 animate-bounce">✨ Revealed to ${state.partnerName}! ✨</span>
+            <span class="block text-sm text-pink-400 mb-2">You sent:</span>
+            <span class="text-2xl font-serif text-pink-600">"${state.targetMessage.replace('Your message will be revealed to ' + state.partnerName, '...')}"</span>
+            <span class="block text-sm text-green-500 mt-4 animate-bounce">✨ Revealed to ${state.partnerName}! ✨</span>
         `;
     } else {
         els.finalMessage.innerHTML = `
-            <span class="text-3xl font-serif text-brand-pink leading-relaxed">"${state.targetMessage}"</span>
+            <span class="text-3xl font-serif text-pink-600 leading-relaxed">"${state.targetMessage}"</span>
         `;
     }
     
@@ -741,7 +822,7 @@ function activatePremium() {
     state.isPremium = true;
     document.body.classList.add('gold-theme');
     els.premiumBtn.innerHTML = `<i data-lucide="check"></i> Premium Active`;
-    els.premiumBtn.classList.add('bg-brand-gold', 'text-black', 'cursor-default');
+    els.premiumBtn.classList.add('bg-yellow-400', 'text-white', 'cursor-default');
     els.premiumBtn.disabled = true;
     els.adBanner.style.display = 'none';
     if (state.charge >= 100) els.downloadCertBtn.classList.remove('hidden');
